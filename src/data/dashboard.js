@@ -19,58 +19,95 @@ export const account = {
   posts: 42,
   followers: '128K',
   avatar: media.avatar,
+  profileUrl: 'https://www.instagram.com/marcosrazzetti/',
 }
 
-export const kpis = [
+export const dateRanges = [
+  { id: '7d', label: 'Últimos 7 días' },
+  { id: '30d', label: 'Últimos 30 días' },
+  { id: '90d', label: 'Últimos 90 días' },
+  { id: '12m', label: 'Últimos 12 meses' },
+]
+
+/** Metadatos fijos de cada KPI; los valores dependen del rango seleccionado. */
+export const kpiMeta = [
+  { id: 'alcance', label: 'Alcance Total', icon: 'eye' },
+  { id: 'engagement', label: 'Engagement', icon: 'heart' },
+  { id: 'seguidores', label: 'Nuevos Seguidores', icon: 'userPlus' },
+  { id: 'clicks', label: 'Clicks en Enlace', icon: 'link' },
+]
+
+export const kpiValues = {
+  '7d': {
+    alcance: { value: '96.4K', delta: '+11.2%', trend: 'up', caption: 'vs semana anterior' },
+    engagement: { value: '5.1%', delta: '+0.9%', trend: 'up', caption: 'sobre promedio' },
+    seguidores: { value: '+910', delta: '+12.4%', trend: 'up', caption: 'orgánico' },
+    clicks: { value: '470', caption: '15.1% conversión' },
+  },
+  '30d': {
+    alcance: { value: '384.2K', delta: '+24.6%', trend: 'up', caption: 'vs mes anterior' },
+    engagement: { value: '4.8%', delta: '+0.6%', trend: 'up', caption: 'sobre promedio' },
+    seguidores: { value: '+3,820', delta: '+18.2%', trend: 'up', caption: 'orgánico' },
+    clicks: { value: '1,840', caption: '14.2% conversión' },
+  },
+  '90d': {
+    alcance: { value: '1.02M', delta: '+31.8%', trend: 'up', caption: 'vs trimestre anterior' },
+    engagement: { value: '4.5%', delta: '+0.3%', trend: 'up', caption: 'sobre promedio' },
+    seguidores: { value: '+11,240', delta: '+21.6%', trend: 'up', caption: 'orgánico' },
+    clicks: { value: '5,320', caption: '13.4% conversión' },
+  },
+  '12m': {
+    alcance: { value: '3.88M', delta: '+48.2%', trend: 'up', caption: 'vs año anterior' },
+    engagement: { value: '4.2%', delta: '-0.4%', trend: 'down', caption: 'sobre promedio' },
+    seguidores: { value: '+42,610', delta: '+35.9%', trend: 'up', caption: 'orgánico' },
+    clicks: { value: '19,470', caption: '12.8% conversión' },
+  },
+}
+
+/**
+ * Publicaciones programadas. `at` es un ISO local; el calendario y las etiquetas
+ * de la cuadrícula derivan de aquí, así que cancelar una publicación también
+ * limpia su etiqueta en el feed.
+ */
+export const initialScheduledPosts = [
   {
-    id: 'alcance',
-    label: 'Alcance Total',
-    value: '384.2K',
-    delta: '+24.6%',
-    caption: 'vs mes anterior',
-    icon: 'eye',
+    id: 'post-manana',
+    at: '2026-08-26T19:00',
+    format: 'Reel',
+    title: '3 errores al escalar tu oferta high-ticket',
+    score: 94,
   },
   {
-    id: 'engagement',
-    label: 'Engagement',
-    value: '4.8%',
-    delta: '+0.6%',
-    caption: 'sobre promedio',
-    icon: 'heart',
-  },
-  {
-    id: 'seguidores',
-    label: 'Nuevos Seguidores',
-    value: '+3,820',
-    delta: '+18.2%',
-    caption: 'orgánico',
-    icon: 'userPlus',
-  },
-  {
-    id: 'clicks',
-    label: 'Clicks en Enlace',
-    value: '1,840',
-    caption: '14.2% conversión',
-    icon: 'link',
+    id: 'post-jueves',
+    at: '2026-08-27T20:30',
+    format: 'Carrusel',
+    title: 'Cómo cerrar ventas por DM sin sonar invasivo',
+    score: 88,
   },
 ]
 
-/**
- * Celdas de la cuadrícula 3×3. `schedule.tone` distingue la próxima publicación
- * (verde) del resto de la cola (gris).
- */
-export const feedSlots = [
+export const freeSlot = {
+  at: '2026-08-29T13:00',
+  suggestion: 'Sugerido: Story interactiva o encuesta',
+}
+
+export const postingWindow = '19:00 - 21:30'
+
+export const postFormats = ['Reel', 'Carrusel', 'Imagen', 'Story']
+
+/** Celdas de la cuadrícula 3×3. `scheduleId` enlaza con una publicación programada. */
+export const initialFeedSlots = [
   {
-    id: 1,
+    id: 'slot-1',
     image: media.erroresEvitar,
     alt: 'Los 3 errores que debes evitar',
     format: 'reel',
-    schedule: { label: 'Mañana 19:00', tone: 'next' },
+    scheduleId: 'post-manana',
     title: '3 errores al escalar tu oferta high-ticket',
     stats: ['♥ Pred: 4.5K', '💬 Optimizado'],
   },
   {
-    id: 2,
+    id: 'slot-2',
     image: media.embudoDominio,
     alt: 'Embudo de ventas: dominando cada etapa',
     format: 'carousel',
@@ -78,23 +115,23 @@ export const feedSlots = [
     stats: ['♥ 3,840', '💬 412'],
   },
   {
-    id: 3,
+    id: 'slot-3',
     image: media.embudoEstrategias,
     alt: 'Embudo de ventas con estrategias digitales',
     format: 'reel',
-    schedule: { label: 'Jueves 20:00', tone: 'queued' },
+    scheduleId: 'post-jueves',
     title: 'Cómo cerrar ventas por DM sin sonar invasivo',
     note: 'Listo para auto-publicar',
   },
   {
-    id: 4,
+    id: 'slot-4',
     image: media.embudoEstrategias,
     alt: 'Framework de contenido B2B',
     title: 'Framework 5 pasos contenido B2B',
     stats: ['♥ 2,910', '💬 280'],
   },
   {
-    id: 5,
+    id: 'slot-5',
     image: media.erroresEvitar,
     alt: 'Caso de estudio de crecimiento',
     format: 'reel',
@@ -102,7 +139,7 @@ export const feedSlots = [
     stats: ['▶ 112K', '♥ 8.9K'],
   },
   {
-    id: 6,
+    id: 'slot-6',
     image: media.embudoDominio,
     alt: 'Herramientas para agencias',
     format: 'carousel',
@@ -110,7 +147,7 @@ export const feedSlots = [
     stats: ['♥ 3,120', '💬 319'],
   },
   {
-    id: 7,
+    id: 'slot-7',
     image: media.erroresEvitar,
     alt: 'Mentalidad de operador',
     format: 'reel',
@@ -118,7 +155,7 @@ export const feedSlots = [
     stats: ['♥ 4,210', '💬 195'],
   },
   {
-    id: 8,
+    id: 'slot-8',
     image: media.avatar,
     alt: 'Reflexión personal',
     title: 'Reflexión: Por qué creé Bitaxus',
@@ -126,6 +163,7 @@ export const feedSlots = [
   },
 ]
 
+/** Cada herramienta trae varias tandas de resultados para el botón "Generar otra tanda". */
 export const contentTools = [
   {
     id: 'hooks',
@@ -133,6 +171,21 @@ export const contentTools = [
     title: 'Hooks & Copies',
     description: 'Ganchos virales con predicción de retención para Reels en segundos.',
     action: 'Generar ideas',
+    resultLabel: 'Retención estimada',
+    batches: [
+      [
+        { text: 'Cobré $50K sin una sola llamada de ventas. Así lo hice:', metric: '78%' },
+        { text: 'Tu oferta no es cara. Tu oferta no se entiende.', metric: '71%' },
+        { text: 'Dejé de publicar todos los días y crecí el triple.', metric: '69%' },
+        { text: 'El error de los $10K que casi cierra mi agencia.', metric: '64%' },
+      ],
+      [
+        { text: '3 frases que suben tu ticket un 40% en la misma llamada.', metric: '74%' },
+        { text: 'Si tu DM empieza así, ya perdiste la venta.', metric: '70%' },
+        { text: 'Nadie compra tu servicio. Compran no tener el problema.', metric: '67%' },
+        { text: 'Lo que un cliente de $30K me dijo al rechazarme.', metric: '62%' },
+      ],
+    ],
   },
   {
     id: 'hashtags',
@@ -140,6 +193,21 @@ export const contentTools = [
     title: 'Inspector de Hashtags',
     description: 'Clusters de etiquetas con métricas de baja competencia y buen volumen.',
     action: 'Analizar tags',
+    resultLabel: 'Competencia',
+    batches: [
+      [
+        { text: '#ventasb2b · 84K publicaciones', metric: 'Baja' },
+        { text: '#agenciademarketing · 212K publicaciones', metric: 'Media' },
+        { text: '#ofertairresistible · 31K publicaciones', metric: 'Baja' },
+        { text: '#highticketsales · 156K publicaciones', metric: 'Media' },
+      ],
+      [
+        { text: '#embudodeventas · 97K publicaciones', metric: 'Baja' },
+        { text: '#negociosdigitales · 480K publicaciones', metric: 'Alta' },
+        { text: '#prospeccionb2b · 22K publicaciones', metric: 'Baja' },
+        { text: '#consultoriadeventas · 64K publicaciones', metric: 'Baja' },
+      ],
+    ],
   },
   {
     id: 'dms',
@@ -147,72 +215,84 @@ export const contentTools = [
     title: 'Automatización DMs',
     description: 'Respuestas y entrega automática de lead magnets a comentarios clave.',
     action: 'Ver flujos',
+    resultLabel: 'Estado',
+    batches: [
+      [
+        { text: 'Comentario "GUIA" → envía PDF Embudo B2B', metric: 'Activo' },
+        { text: 'Comentario "AUDIT" → agenda diagnóstico', metric: 'Activo' },
+        { text: 'Nuevo seguidor → mensaje de bienvenida', metric: 'Pausado' },
+        { text: 'Historia respondida → secuencia de 3 mensajes', metric: 'Borrador' },
+      ],
+      [
+        { text: 'Comentario "PLANTILLA" → envía Notion de guiones', metric: 'Activo' },
+        { text: 'Mención en story → agradecimiento + oferta', metric: 'Activo' },
+        { text: 'Palabra "precio" en DM → deriva a llamada', metric: 'Pausado' },
+        { text: 'Sin respuesta en 48h → recordatorio único', metric: 'Borrador' },
+      ],
+    ],
   },
 ]
-
-/** `activity` gradúa el punto bajo cada día: cuánta actividad hay programada. */
-export const week = [
-  { id: 'lun', label: 'LUN', day: 24, activity: 'low' },
-  { id: 'mar', label: 'MAR', day: 25, activity: 'today', isToday: true },
-  { id: 'mie', label: 'MIÉ', day: 26, activity: 'low' },
-  { id: 'jue', label: 'JUE', day: 27, activity: 'high' },
-  { id: 'vie', label: 'VIE', day: 28, activity: 'low' },
-  { id: 'sab', label: 'SÁB', day: 29, activity: 'none' },
-  { id: 'dom', label: 'DOM', day: 30, activity: 'none' },
-]
-
-export const upcomingPosts = [
-  {
-    id: 'manana',
-    when: 'Mañana · 19:00',
-    format: 'Reel',
-    title: '3 errores al escalar tu oferta high-ticket',
-    score: '94% óptimo',
-  },
-  {
-    id: 'jueves',
-    when: 'Jueves · 20:30',
-    format: 'Carrusel',
-    title: 'Cómo cerrar ventas por DM sin sonar invasivo',
-    score: '88% óptimo',
-  },
-]
-
-export const freeSlot = {
-  when: 'Sábado · 13:00 (Espacio libre)',
-  suggestion: 'Sugerido: Story interactiva o encuesta',
-}
 
 export const topReels = [
   {
-    id: 1,
-    rank: 1,
+    id: 'reel-1',
     image: media.erroresEvitar,
     title: 'Caso de estudio: De 0 a $50K MRR',
-    views: '112.4K vistas',
+    views: '112.4K',
     retention: 68,
     likes: '8.9K',
-    shares: '894 shares',
+    shares: '894',
+    comments: '412',
+    saves: '2,180',
+    duration: '58s',
   },
   {
-    id: 2,
-    rank: 2,
+    id: 'reel-2',
     image: media.embudoEstrategias,
     title: 'Por qué no vender por mensaje directo',
-    views: '84.5K vistas',
+    views: '84.5K',
     retention: 54,
     likes: '6.2K',
-    shares: '512 shares',
+    shares: '512',
+    comments: '298',
+    saves: '1,470',
+    duration: '43s',
   },
   {
-    id: 3,
-    rank: 3,
+    id: 'reel-3',
     image: media.embudoDominio,
     title: 'Estructura ganadora para carruseles',
-    views: '61.3K vistas',
+    views: '61.3K',
     retention: 49,
     likes: '4.1K',
-    shares: '340 shares',
+    shares: '340',
+    comments: '187',
+    saves: '1,020',
+    duration: '37s',
+  },
+  {
+    id: 'reel-4',
+    image: media.erroresEvitar,
+    title: 'Mentalidad de Operador vs Fundador',
+    views: '48.7K',
+    retention: 45,
+    likes: '3.4K',
+    shares: '221',
+    comments: '154',
+    saves: '860',
+    duration: '51s',
+  },
+  {
+    id: 'reel-5',
+    image: media.embudoDominio,
+    title: '7 Herramientas para Agencias',
+    views: '39.2K',
+    retention: 41,
+    likes: '2.8K',
+    shares: '176',
+    comments: '119',
+    saves: '640',
+    duration: '64s',
   },
 ]
 

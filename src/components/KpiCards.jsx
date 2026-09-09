@@ -1,4 +1,4 @@
-import { kpis } from '../data/dashboard.js'
+import { useDashboard } from '../state/DashboardContext.jsx'
 import { EyeIcon, HeartIcon, LinkIcon, UserPlusIcon } from './icons.jsx'
 
 const iconsById = {
@@ -9,9 +9,11 @@ const iconsById = {
 }
 
 export default function KpiCards() {
+  const { kpis } = useDashboard()
+
   return (
     <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-      {kpis.map(({ id, label, value, delta, caption, icon }) => {
+      {kpis.map(({ id, label, value, delta, trend, caption, icon }) => {
         const Icon = iconsById[icon]
 
         return (
@@ -29,7 +31,11 @@ export default function KpiCards() {
                   delta ? 'text-slate-600' : 'text-slate-500'
                 }`}
               >
-                {delta && <span className="text-emerald-600">{delta}</span>}
+                {delta && (
+                  <span className={trend === 'down' ? 'text-rose-600' : 'text-emerald-600'}>
+                    {delta}
+                  </span>
+                )}
                 {caption}
               </span>
             </div>

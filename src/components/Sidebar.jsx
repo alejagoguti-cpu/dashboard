@@ -1,4 +1,7 @@
+import { useRef, useState } from 'react'
 import { account } from '../data/dashboard.js'
+import useOutsideClick from '../hooks/useOutsideClick.js'
+import { useDashboard } from '../state/DashboardContext.jsx'
 import {
   ChartIcon,
   CalendarIcon,
@@ -13,7 +16,12 @@ import {
   YouTubeIcon,
 } from './icons.jsx'
 
-const sections = [
+export const sections = [
+  {
+    id: 'general',
+    title: null,
+    items: [{ id: 'inicio', label: 'Inicio', Icon: HomeIcon }],
+  },
   {
     id: 'investigacion',
     title: 'Investigación',
@@ -28,7 +36,7 @@ const sections = [
     title: 'Crear',
     items: [
       { id: 'youtube', label: 'YouTube', Icon: YouTubeIcon },
-      { id: 'instagram', label: 'Instagram', Icon: InstagramIcon, active: true },
+      { id: 'instagram', label: 'Instagram', Icon: InstagramIcon },
       { id: 'linkedin', label: 'LinkedIn', Icon: LinkedInIcon },
     ],
   },
@@ -43,28 +51,88 @@ const sections = [
   },
 ]
 
-function NavLink({ label, Icon, active }) {
-  if (active) {
-    return (
-      <a
-        href="#"
-        aria-current="page"
-        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[#281518] text-[#f43f5e] font-semibold border border-[#4a1d24] shadow-xs"
-      >
-        <Icon className="w-4 h-4 text-[#f43f5e]" />
-        <span>{label}</span>
-      </a>
-    )
-  }
+const userMenu = [
+  { id: 'perfil', label: 'Ver perfil', message: 'Perfil de Marcos Razzetti' },
+  { id: 'cuentas', label: 'Cambiar de cuenta', message: 'Solo hay una cuenta conectada' },
+  { id: 'ajustes', label: 'Configuración', message: 'Configuración del espacio de trabajo' },
+  { id: 'salir', label: 'Cerrar sesión', message: 'Sesión cerrada', danger: true },
+]
+
+function NavLink({ id, label, Icon }) {
+  const { section, setSection } = useDashboard()
+  const active = section === id
 
   return (
-    <a
-      href="#"
-      className="flex items-center gap-3 px-3 py-2 text-[#94a3b8] hover:text-white rounded-lg transition-colors group"
+    <button
+      type="button"
+      onClick={() => setSection(id)}
+      aria-current={active ? 'page' : undefined}
+      className={
+        active
+          ? 'w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-[#281518] text-[#f43f5e] font-semibold border border-[#4a1d24] shadow-xs'
+          : 'w-full flex items-center gap-3 px-3 py-2 text-[#94a3b8] hover:text-white hover:bg-sidebar-hover rounded-lg transition-colors group'
+      }
     >
-      <Icon className="w-4 h-4 text-[#64748b] group-hover:text-white" />
+      <Icon className={active ? 'w-4 h-4 text-[#f43f5e]' : 'w-4 h-4 text-[#64748b] group-hover:text-white'} />
       <span>{label}</span>
-    </a>
+    </button>
+  )
+}
+
+function UserMenu() {
+  const { notify } = useDashboard()
+  const [open, setOpen] = useState(false)
+  const container = useRef(null)
+  useOutsideClick(container, () => setOpen(false), open)
+
+  return (
+    <div ref={container} className="relative">
+      {open && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 py-1 rounded-xl bg-[#16191f] border border-sidebar-border shadow-lg">
+          {userMenu.map(({ id, label, message, danger }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                notify(message)
+              }}
+              className={`w-full text-left px-3 py-2 text-xs transition-colors ${
+                danger
+                  ? 'text-[#f43f5e] hover:bg-[#281518]'
+                  : 'text-[#94a3b8] hover:text-white hover:bg-[#1d212a]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#161920] transition text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full ring-2 ring-brand-rose/70 overflow-hidden bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1.5px]">
+            <img
+              src={account.avatar}
+              alt={`Avatar de ${account.name}`}
+              className="w-full h-full object-cover rounded-full"
+            />
+          </div>
+          <span className="text-white text-xs font-semibold tracking-tight">{account.name}</span>
+        </div>
+        <ChevronDownIcon
+          className={`w-4 h-4 text-[#64748b] group-hover:text-white transition ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+    </div>
   )
 }
 
@@ -79,17 +147,15 @@ export default function Sidebar() {
         </div>
 
         <nav className="space-y-6 text-[13px] font-medium">
-          <div>
-            <NavLink label="Inicio" Icon={HomeIcon} />
-          </div>
-
-          {sections.map((section) => (
-            <div key={section.id}>
-              <p className="px-3 text-[10px] font-bold tracking-wider text-[#475569] uppercase mb-2">
-                {section.title}
-              </p>
+          {sections.map((group) => (
+            <div key={group.id}>
+              {group.title && (
+                <p className="px-3 text-[10px] font-bold tracking-wider text-[#475569] uppercase mb-2">
+                  {group.title}
+                </p>
+              )}
               <div className="space-y-1">
-                {section.items.map((item) => (
+                {group.items.map((item) => (
                   <NavLink key={item.id} {...item} />
                 ))}
               </div>
@@ -99,22 +165,7 @@ export default function Sidebar() {
       </div>
 
       <div className="p-3 border-t border-sidebar-border">
-        <button
-          type="button"
-          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#161920] transition text-left group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full ring-2 ring-brand-rose/70 overflow-hidden bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1.5px]">
-              <img
-                src={account.avatar}
-                alt={`Avatar de ${account.name}`}
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-            <span className="text-white text-xs font-semibold tracking-tight">{account.name}</span>
-          </div>
-          <ChevronDownIcon className="w-4 h-4 text-[#64748b] group-hover:text-white transition" />
-        </button>
+        <UserMenu />
       </div>
     </aside>
   )
