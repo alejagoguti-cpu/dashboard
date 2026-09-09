@@ -11,16 +11,13 @@ const iconsById = {
   chat: ChatIcon,
 }
 
-/** Solo los flujos de DMs viven en n8n; el resto de herramientas son locales. */
-const LIVE_TOOL = 'dms'
-
 /**
- * Normaliza la respuesta del workflow. Se aceptan tanto `[{...}]` como
- * `{ flows: [...] }` porque un nodo "Respond to Webhook" puede devolver
- * cualquiera de las dos formas según cómo se configure.
+ * Normaliza la respuesta del workflow. Se aceptan `[{...}]`, `{ flows: [...] }`
+ * y `{ results: [...] }` porque un nodo "Respond to Webhook" puede devolver
+ * cualquiera de esas formas según cómo se configure.
  */
-function normalizeFlows(payload) {
-  const rows = Array.isArray(payload) ? payload : (payload?.flows ?? [])
+function normalizeRows(payload) {
+  const rows = Array.isArray(payload) ? payload : (payload?.flows ?? payload?.results ?? [])
 
   return rows
     .map((row) => ({
@@ -37,7 +34,8 @@ export default function ContentTools() {
   const [live, setLive] = useState({ status: 'idle', rows: [], error: null })
 
   const tool = contentTools.find((item) => item.id === openTool)
-  const isLive = connected && openTool === LIVE_TOOL
+  // Con n8n conectado, las tres herramientas leen de su propio workflow.
+  const isLive = connected && Boolean(tool?.webhook)
 
   const results = isLive && live.status === 'ready'
     ? live.rows
@@ -51,14 +49,18 @@ export default function ContentTools() {
     setLive({ status: 'loading', rows: [], error: null })
 
     n8n
-      .callWebhook(n8n.WEBHOOKS.dmFlows, { method: 'GET' })
+      .callWebhook(n8n.WEBHOOKS[tool.webhook], {
+        method: tool.method,
+        // Las herramientas generativas reciben la tanda para variar el resultado.
+        ...(tool.method === 'POST' ? { body: { tool: tool.id, batch } } : {}),
+      })
       .then((payload) => {
         if (cancelled) return
-        const rows = normalizeFlows(payload)
+        const rows = normalizeRows(payload)
         setLive(
           rows.length > 0
             ? { status: 'ready', rows, error: null }
-            : { status: 'error', rows: [], error: 'El workflow no devolvió ningún flujo' },
+            : { status: 'error', rows: [], error: 'El workflow no devolvió resultados' },
         )
       })
       .catch((error) => {
@@ -68,7 +70,7 @@ export default function ContentTools() {
     return () => {
       cancelled = true
     }
-  }, [isLive, batch])
+  }, [isLive, batch, tool])
 
   function open(id) {
     setOpenTool(id)
@@ -114,7 +116,7 @@ export default function ContentTools() {
                   <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
                     <Icon className="w-3.5 h-3.5" />
                   </div>
-                  {connected && id === LIVE_TOOL && (
+                  {connected && (
                     <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                       n8n
                     </span>

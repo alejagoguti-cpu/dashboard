@@ -129,7 +129,9 @@ export default function FeedPlanner({ onSchedule }) {
 
   // La primera publicación de la cola se marca en verde; el resto, en gris.
   const postsById = useMemo(() => {
-    const sorted = [...posts].sort((a, b) => new Date(a.at) - new Date(b.at))
+    const sorted = posts
+      .filter((post) => (post.platform ?? 'instagram') === 'instagram')
+      .sort((a, b) => new Date(a.at) - new Date(b.at))
     return new Map(sorted.map((post, index) => [post.id, { ...post, isNext: index === 0 }]))
   }, [posts])
 
@@ -289,7 +291,7 @@ export default function FeedPlanner({ onSchedule }) {
               onClick={() => {
                 const title = detail.title
                 setDetail(null)
-                onSchedule({ title })
+                onSchedule({ title, platform: 'instagram' })
               }}
               className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
             >

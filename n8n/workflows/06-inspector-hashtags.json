@@ -1,0 +1,80 @@
+{
+  "name": "Bitaxus · Inspector de hashtags",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bitaxus/inspect-hashtags",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-bitaxus-inspect-hashtags",
+      "name": "Webhook",
+      "webhookId": "bitaxus-inspect-hashtags"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El panel envía { tool, batch }. Sustituye esta lista por tu fuente real de\n// datos de hashtags (API, hoja de cálculo, base de datos…).\nconst { batch = 0 } = $input.first().json.body ?? {};\n\nconst tandas = [\n  [\n    { text: '#ventasb2b · 84K publicaciones', metric: 'Baja' },\n    { text: '#agenciademarketing · 212K publicaciones', metric: 'Media' },\n    { text: '#ofertairresistible · 31K publicaciones', metric: 'Baja' },\n    { text: '#highticketsales · 156K publicaciones', metric: 'Media' },\n  ],\n  [\n    { text: '#embudodeventas · 97K publicaciones', metric: 'Baja' },\n    { text: '#negociosdigitales · 480K publicaciones', metric: 'Alta' },\n    { text: '#prospeccionb2b · 22K publicaciones', metric: 'Baja' },\n    { text: '#consultoriadeventas · 64K publicaciones', metric: 'Baja' },\n  ],\n];\n\nreturn tandas[batch % tandas.length].map((json) => ({ json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-inspect-hashtags",
+      "name": "Componer resultados"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"results\": $input.all().map(item => item.json) } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        440,
+        0
+      ],
+      "id": "respond-inspect-hashtags",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Componer resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resultados": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

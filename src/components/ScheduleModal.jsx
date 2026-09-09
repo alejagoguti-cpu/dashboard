@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { postFormats } from '../data/dashboard.js'
+import { platforms, postFormats } from '../data/dashboard.js'
 import { REFERENCE_TODAY, addDays, fromDateTimeInput, formatTime, toDate, toDateInput } from '../lib/dates.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import Modal from './ui/Modal.jsx'
@@ -17,7 +17,8 @@ export default function ScheduleModal({ draft, onClose }) {
   const sending = busy === 'addPost'
 
   const [title, setTitle] = useState('')
-  const [format, setFormat] = useState(postFormats[0])
+  const [platform, setPlatform] = useState('instagram')
+  const [format, setFormat] = useState(postFormats.instagram[0])
   const [date, setDate] = useState('')
   const [time, setTime] = useState('19:00')
   const [error, setError] = useState('')
@@ -27,9 +28,11 @@ export default function ScheduleModal({ draft, onClose }) {
     if (!draft) return
 
     const initial = draft.date ? toDate(draft.date) : addDays(REFERENCE_TODAY, 1)
+    const target = draft.platform ?? 'instagram'
 
     setTitle(draft.title ?? '')
-    setFormat(draft.format ?? postFormats[0])
+    setPlatform(target)
+    setFormat(draft.format ?? postFormats[target][0])
     setDate(toDateInput(initial))
     setTime(draft.date ? formatTime(initial) : '19:00')
     setError('')
@@ -53,6 +56,7 @@ export default function ScheduleModal({ draft, onClose }) {
     const ok = await addPost({
       id: `post-${Date.now()}`,
       at: `${date}T${time}`,
+      platform,
       format,
       title: title.trim(),
       // Las franjas de 19:00 a 21:30 rinden mejor según los datos del panel.
@@ -105,22 +109,46 @@ export default function ScheduleModal({ draft, onClose }) {
           />
         </div>
 
-        <div>
-          <label htmlFor="schedule-format" className="block text-[11px] font-medium text-slate-500 mb-1.5">
-            Formato
-          </label>
-          <select
-            id="schedule-format"
-            value={format}
-            onChange={(event) => setFormat(event.target.value)}
-            className={field}
-          >
-            {postFormats.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="schedule-platform" className="block text-[11px] font-medium text-slate-500 mb-1.5">
+              Plataforma
+            </label>
+            <select
+              id="schedule-platform"
+              value={platform}
+              onChange={(event) => {
+                const next = event.target.value
+                setPlatform(next)
+                // Cada plataforma tiene sus formatos: el elegido puede no existir allí.
+                setFormat(postFormats[next][0])
+              }}
+              className={field}
+            >
+              {Object.values(platforms).map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="schedule-format" className="block text-[11px] font-medium text-slate-500 mb-1.5">
+              Formato
+            </label>
+            <select
+              id="schedule-format"
+              value={format}
+              onChange={(event) => setFormat(event.target.value)}
+              className={field}
+            >
+              {postFormats[platform].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

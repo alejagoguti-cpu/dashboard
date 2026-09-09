@@ -1,16 +1,34 @@
 /**
- * Datos de demostración del panel de Instagram. Todo el contenido mostrado en la
- * interfaz vive aquí para que sustituirlo por una API real solo implique cambiar
- * este módulo.
+ * Datos de demostración del panel. Todo el contenido mostrado en la interfaz vive
+ * aquí para que sustituirlo por una API real solo implique cambiar este módulo.
+ *
+ * Las portadas son SVG del propio repositorio (`src/assets`). Antes apuntaban al
+ * CDN temporal de Google Stitch, del que salió el diseño, pero esos enlaces
+ * caducan y dejaban el feed en blanco.
  */
 
-const CDN = 'https://lh3.googleusercontent.com/aida-public'
+import avatarMarcos from '../assets/avatar-marcos.svg'
+import carruseles from '../assets/carruseles.svg'
+import casoEstudio from '../assets/caso-estudio.svg'
+import embudoB2B from '../assets/embudo-b2b.svg'
+import erroresEvitar from '../assets/errores-evitar.svg'
+import estrategiasDigitales from '../assets/estrategias-digitales.svg'
+import frameworkContenido from '../assets/framework-contenido.svg'
+import herramientasAgencias from '../assets/herramientas-agencias.svg'
+import operadorFundador from '../assets/operador-fundador.svg'
+import reflexionBitaxus from '../assets/reflexion-bitaxus.svg'
 
 export const media = {
-  avatar: `${CDN}/AB6AXuBf7zMQkf5DWSmifUcbAUDkTdF74VgsqX_pdmhFAyGFdFW1glgAR-LdUWsHEXZNo1txRXDYg3BT3DuXEEzJsjgy_GMuX_qZpA22Jrgzq7cENxsoxU3dVjBbzvTCX5WAMDcnHuqT-CVCXGFhuHQDxdo07v8-CDnENnDTq3XC6bd2io0h2KfqeZ12zejDFzGDbK3Dp2bEcYwvXjgrQOJ7EA_acKI0ily0FkINRHkFzGmWwsyAA-jMZQbj`,
-  erroresEvitar: `${CDN}/AB6AXuBtvK1BU9SvDcab2LDbTeadTFQEG7z9iEXgeOo-n_E8MQLxI7Ynaonxk2XWC9RGk2ZJbiuFmom2cEZwSxrE2mkBIvB5Kw9hToNVLYumN5g55mMedB0GC4bwjKlH27l4ZJpAykk66_3XStD8YRgQaiQBp1pRgqVkKfH7QXaMMFrFssPQurUj-rJ0kMxWMpc_r52epvkJFW8OeH4DyHN9qT24Varfy_2ok2QJixkBBpnBkXRm87a-dont`,
-  embudoDominio: `${CDN}/AB6AXuBDTy1crc_OJlnz0hYAlJQ3diel17K5e7YTvpV75fIf6z81hz61kAcAx_I_dEcaUR3pwSjjSWTJmZtPTxIzAjHTATzlVXI20-hM8Mw0xvE7dKyKz1dzDt_G50JqrUZawtPzcLy0WNGECseRxwO8ylMGKUG1PWtkLaa_f5WzbwBNMUMZ4KFo_6WEEuGGHihQbQYNJt-KJb6zIm526oNwetOdFKICyBJ9p_JEz5_fAW4KAn2QJs_-YCo4`,
-  embudoEstrategias: `${CDN}/AB6AXuDtn-OvYDlh_PPMmcDnzNHTtCsyFdzjoKcT2aos3ISn_YxEUUZ8xyvlCgFa_mnN8WDGvX4944UZNbESiCZ-Q5L01KbKK1nkDFopJnPXGj9MhV16Saby6WLavVvBZLpGc7EkdIZu2jZJH9YesxdEZgqlzxHVwyswoSnOV7u-8VYTxT0rpy1gkTg8hsbdSUnlR4LCHvoung9Q0BYawsY7KeBowPcwMasved2menYw6x6JUGXsKG0fWyx5`,
+  avatar: avatarMarcos,
+  carruseles,
+  casoEstudio,
+  embudoB2B,
+  erroresEvitar,
+  estrategiasDigitales,
+  frameworkContenido,
+  herramientasAgencias,
+  operadorFundador,
+  reflexionBitaxus,
 }
 
 export const account = {
@@ -69,17 +87,27 @@ export const kpiValues = {
  * de la cuadrícula derivan de aquí, así que cancelar una publicación también
  * limpia su etiqueta en el feed.
  */
+/** Devuelve una fecha local `YYYY-MM-DDTHH:mm` a N días de hoy. */
+function inDays(days, time) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${time}`
+}
+
 export const initialScheduledPosts = [
   {
     id: 'post-manana',
-    at: '2026-08-26T19:00',
+    at: inDays(1, '19:00'),
+    platform: 'instagram',
     format: 'Reel',
     title: '3 errores al escalar tu oferta high-ticket',
     score: 94,
   },
   {
     id: 'post-jueves',
-    at: '2026-08-27T20:30',
+    at: inDays(2, '20:30'),
+    platform: 'instagram',
     format: 'Carrusel',
     title: 'Cómo cerrar ventas por DM sin sonar invasivo',
     score: 88,
@@ -87,20 +115,84 @@ export const initialScheduledPosts = [
 ]
 
 export const freeSlot = {
-  at: '2026-08-29T13:00',
+  at: inDays(4, '13:00'),
   suggestion: 'Sugerido: Story interactiva o encuesta',
 }
 
 export const postingWindow = '19:00 - 21:30'
 
-export const postFormats = ['Reel', 'Carrusel', 'Imagen', 'Story']
+/** Formatos disponibles por plataforma en el diálogo de programación. */
+export const postFormats = {
+  instagram: ['Reel', 'Carrusel', 'Imagen', 'Story'],
+  youtube: ['Vídeo largo', 'Short', 'Directo'],
+  linkedin: ['Artículo', 'Carrusel', 'Texto', 'Vídeo'],
+}
+
+/** Metadatos de cada estudio de creación. */
+export const platforms = {
+  instagram: { id: 'instagram', label: 'Instagram', handle: '@marcosrazzetti', audience: '128K seguidores' },
+  youtube: { id: 'youtube', label: 'YouTube', handle: '@marcosrazzetti', audience: '41.2K suscriptores' },
+  linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'in/marcosrazzetti', audience: '23.8K contactos' },
+}
+
+/** KPIs por plataforma para los estudios de YouTube y LinkedIn. */
+export const platformKpis = {
+  youtube: [
+    { id: 'vistas', label: 'Vistas', value: '218.7K', delta: '+16.4%', trend: 'up', caption: 'vs mes anterior', icon: 'eye' },
+    { id: 'retencion', label: 'Retención media', value: '42.1%', delta: '+2.3%', trend: 'up', caption: 'sobre promedio', icon: 'heart' },
+    { id: 'suscriptores', label: 'Suscriptores', value: '+1,940', delta: '+9.8%', trend: 'up', caption: 'orgánico', icon: 'userPlus' },
+    { id: 'clicks', label: 'Clicks en descripción', value: '3,120', caption: '11.4% conversión', icon: 'link' },
+  ],
+  linkedin: [
+    { id: 'impresiones', label: 'Impresiones', value: '146.3K', delta: '+28.1%', trend: 'up', caption: 'vs mes anterior', icon: 'eye' },
+    { id: 'interaccion', label: 'Interacción', value: '6.2%', delta: '+1.1%', trend: 'up', caption: 'sobre promedio', icon: 'heart' },
+    { id: 'contactos', label: 'Nuevos contactos', value: '+870', delta: '+14.6%', trend: 'up', caption: 'orgánico', icon: 'userPlus' },
+    { id: 'clicks', label: 'Clicks en enlace', value: '1,265', caption: '9.7% conversión', icon: 'link' },
+  ],
+}
+
+/** Noticias del sector (sección Investigación → Noticias). */
+export const newsItems = [
+  { id: 'n1', source: 'TechCrunch', minutes: 42, title: 'Instagram amplía los Reels a 5 minutos para todas las cuentas', topic: 'Formatos', relevance: 'alta' },
+  { id: 'n2', source: 'Social Media Today', minutes: 96, title: 'El alcance orgánico de los carruseles cae un 12% tras el último ajuste', topic: 'Algoritmo', relevance: 'alta' },
+  { id: 'n3', source: 'The Verge', minutes: 180, title: 'LinkedIn prueba un feed de vídeo vertical al estilo TikTok', topic: 'Plataformas', relevance: 'media' },
+  { id: 'n4', source: 'Marketing Dive', minutes: 300, title: 'El 61% de las agencias B2B ya automatiza su prospección por DM', topic: 'Ventas', relevance: 'alta' },
+  { id: 'n5', source: 'Search Engine Land', minutes: 420, title: 'YouTube prioriza los Shorts con mayor retención en los primeros 3s', topic: 'Algoritmo', relevance: 'media' },
+  { id: 'n6', source: 'Ad Age', minutes: 640, title: 'Los creadores B2B duplican su ticket medio de patrocinio en 2026', topic: 'Negocio', relevance: 'baja' },
+]
+
+/** Temas seguidos, con volumen y tendencia (sección Investigación → Temas). */
+export const topics = [
+  { id: 't1', name: 'Embudos de venta B2B', volume: 12400, trend: 18, posts: 9 },
+  { id: 't2', name: 'Ofertas high-ticket', volume: 8600, trend: 27, posts: 6 },
+  { id: 't3', name: 'Automatización de DMs', volume: 5300, trend: 44, posts: 4 },
+  { id: 't4', name: 'Prospección en frío', volume: 4100, trend: -6, posts: 3 },
+  { id: 't5', name: 'Escalado de agencias', volume: 3800, trend: 12, posts: 5 },
+  { id: 't6', name: 'Personal branding técnico', volume: 2900, trend: -14, posts: 2 },
+]
+
+/** Rendimiento comparado por formato (sección Investigación → Formatos). */
+export const formatStats = [
+  { id: 'f1', name: 'Reel', posts: 18, reach: '212.4K', engagement: 5.4, retention: 58, best: 'Ganchos de 3 segundos' },
+  { id: 'f2', name: 'Carrusel', posts: 12, reach: '96.8K', engagement: 6.1, retention: 71, best: 'Guías paso a paso' },
+  { id: 'f3', name: 'Imagen', posts: 8, reach: '41.2K', engagement: 3.2, retention: 45, best: 'Citas y resultados' },
+  { id: 'f4', name: 'Story', posts: 34, reach: '33.9K', engagement: 8.7, retention: 62, best: 'Encuestas y preguntas' },
+]
+
+/** Cuentas vigiladas (sección Estadísticas → Competidores). */
+export const competitors = [
+  { id: 'c1', handle: '@growthopsdaily', followers: '204K', growth: 3.1, engagement: 3.8, cadence: '6/semana', focus: 'Operaciones de agencia' },
+  { id: 'c2', handle: '@b2bfunnelguy', followers: '156K', growth: 5.4, engagement: 4.9, cadence: '5/semana', focus: 'Embudos y CRO' },
+  { id: 'c3', handle: '@salesdmpro', followers: '98K', growth: -1.2, engagement: 2.6, cadence: '3/semana', focus: 'Prospección por DM' },
+  { id: 'c4', handle: '@offerarchitect', followers: '87K', growth: 7.8, engagement: 6.3, cadence: '4/semana', focus: 'Diseño de oferta' },
+]
 
 /** Celdas de la cuadrícula 3×3. `scheduleId` enlaza con una publicación programada. */
 export const initialFeedSlots = [
   {
     id: 'slot-1',
     image: media.erroresEvitar,
-    alt: 'Los 3 errores que debes evitar',
+    alt: 'Los 3 errores más caros',
     format: 'reel',
     scheduleId: 'post-manana',
     title: '3 errores al escalar tu oferta high-ticket',
@@ -108,16 +200,16 @@ export const initialFeedSlots = [
   },
   {
     id: 'slot-2',
-    image: media.embudoDominio,
-    alt: 'Embudo de ventas: dominando cada etapa',
+    image: media.embudoB2B,
+    alt: 'Guía del embudo de ventas B2B',
     format: 'carousel',
     title: 'Guía embudo de ventas B2B',
     stats: ['♥ 3,840', '💬 412'],
   },
   {
     id: 'slot-3',
-    image: media.embudoEstrategias,
-    alt: 'Embudo de ventas con estrategias digitales',
+    image: media.estrategiasDigitales,
+    alt: 'Estrategias digitales por etapa',
     format: 'reel',
     scheduleId: 'post-jueves',
     title: 'Cómo cerrar ventas por DM sin sonar invasivo',
@@ -125,39 +217,39 @@ export const initialFeedSlots = [
   },
   {
     id: 'slot-4',
-    image: media.embudoEstrategias,
-    alt: 'Framework de contenido B2B',
+    image: media.frameworkContenido,
+    alt: 'Framework de 5 pasos para contenido B2B',
     title: 'Framework 5 pasos contenido B2B',
     stats: ['♥ 2,910', '💬 280'],
   },
   {
     id: 'slot-5',
-    image: media.erroresEvitar,
-    alt: 'Caso de estudio de crecimiento',
+    image: media.casoEstudio,
+    alt: 'Caso de estudio: de 0 a 50K MRR',
     format: 'reel',
     title: 'Caso de estudio: De 0 a $50K',
     stats: ['▶ 112K', '♥ 8.9K'],
   },
   {
     id: 'slot-6',
-    image: media.embudoDominio,
-    alt: 'Herramientas para agencias',
+    image: media.herramientasAgencias,
+    alt: '7 herramientas para agencias',
     format: 'carousel',
     title: '7 Herramientas para Agencias',
     stats: ['♥ 3,120', '💬 319'],
   },
   {
     id: 'slot-7',
-    image: media.erroresEvitar,
-    alt: 'Mentalidad de operador',
+    image: media.operadorFundador,
+    alt: 'Mentalidad de operador vs fundador',
     format: 'reel',
     title: 'Mentalidad de Operador vs Fundador',
     stats: ['♥ 4,210', '💬 195'],
   },
   {
     id: 'slot-8',
-    image: media.avatar,
-    alt: 'Reflexión personal',
+    image: media.reflexionBitaxus,
+    alt: 'Por qué creé Bitaxus',
     title: 'Reflexión: Por qué creé Bitaxus',
     stats: ['♥ 5,140', '💬 524'],
   },
@@ -167,6 +259,8 @@ export const initialFeedSlots = [
 export const contentTools = [
   {
     id: 'hooks',
+    webhook: 'generateHooks',
+    method: 'POST',
     icon: 'sparkles',
     title: 'Hooks & Copies',
     description: 'Ganchos virales con predicción de retención para Reels en segundos.',
@@ -189,6 +283,8 @@ export const contentTools = [
   },
   {
     id: 'hashtags',
+    webhook: 'inspectHashtags',
+    method: 'POST',
     icon: 'hashtag',
     title: 'Inspector de Hashtags',
     description: 'Clusters de etiquetas con métricas de baja competencia y buen volumen.',
@@ -211,6 +307,8 @@ export const contentTools = [
   },
   {
     id: 'dms',
+    webhook: 'dmFlows',
+    method: 'GET',
     icon: 'chat',
     title: 'Automatización DMs',
     description: 'Respuestas y entrega automática de lead magnets a comentarios clave.',
@@ -236,7 +334,7 @@ export const contentTools = [
 export const topReels = [
   {
     id: 'reel-1',
-    image: media.erroresEvitar,
+    image: media.casoEstudio,
     title: 'Caso de estudio: De 0 a $50K MRR',
     views: '112.4K',
     retention: 68,
@@ -248,7 +346,7 @@ export const topReels = [
   },
   {
     id: 'reel-2',
-    image: media.embudoEstrategias,
+    image: media.estrategiasDigitales,
     title: 'Por qué no vender por mensaje directo',
     views: '84.5K',
     retention: 54,
@@ -260,7 +358,7 @@ export const topReels = [
   },
   {
     id: 'reel-3',
-    image: media.embudoDominio,
+    image: media.carruseles,
     title: 'Estructura ganadora para carruseles',
     views: '61.3K',
     retention: 49,
@@ -272,7 +370,7 @@ export const topReels = [
   },
   {
     id: 'reel-4',
-    image: media.erroresEvitar,
+    image: media.operadorFundador,
     title: 'Mentalidad de Operador vs Fundador',
     views: '48.7K',
     retention: 45,
@@ -284,7 +382,7 @@ export const topReels = [
   },
   {
     id: 'reel-5',
-    image: media.embudoDominio,
+    image: media.herramientasAgencias,
     title: '7 Herramientas para Agencias',
     views: '39.2K',
     retention: 41,

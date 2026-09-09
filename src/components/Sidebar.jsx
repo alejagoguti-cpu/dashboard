@@ -52,10 +52,9 @@ export const sections = [
 ]
 
 const userMenu = [
-  { id: 'perfil', label: 'Ver perfil', message: 'Perfil de Marcos Razzetti' },
-  { id: 'cuentas', label: 'Cambiar de cuenta', message: 'Solo hay una cuenta conectada' },
-  { id: 'ajustes', label: 'Configuración', message: 'Configuración del espacio de trabajo' },
-  { id: 'salir', label: 'Cerrar sesión', message: 'Sesión cerrada', danger: true },
+  { id: 'perfil', label: 'Ver perfil' },
+  { id: 'ajustes', label: 'Configuración' },
+  { id: 'salir', label: 'Cerrar sesión', danger: true },
 ]
 
 function NavLink({ id, label, Icon }) {
@@ -79,8 +78,7 @@ function NavLink({ id, label, Icon }) {
   )
 }
 
-function UserMenu() {
-  const { notify } = useDashboard()
+function UserMenu({ onAction }) {
   const [open, setOpen] = useState(false)
   const container = useRef(null)
   useOutsideClick(container, () => setOpen(false), open)
@@ -89,13 +87,13 @@ function UserMenu() {
     <div ref={container} className="relative">
       {open && (
         <div className="absolute bottom-full left-0 right-0 mb-2 py-1 rounded-xl bg-[#16191f] border border-sidebar-border shadow-lg">
-          {userMenu.map(({ id, label, message, danger }) => (
+          {userMenu.map(({ id, label, danger }) => (
             <button
               key={id}
               type="button"
               onClick={() => {
                 setOpen(false)
-                notify(message)
+                onAction(id)
               }}
               className={`w-full text-left px-3 py-2 text-xs transition-colors ${
                 danger
@@ -136,7 +134,7 @@ function UserMenu() {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onAccountAction }) {
   return (
     <aside className="w-64 bg-sidebar flex-shrink-0 flex flex-col justify-between border-r border-sidebar-border select-none h-full z-20">
       <div className="flex flex-col flex-1 overflow-y-auto pt-6 px-4">
@@ -165,7 +163,7 @@ export default function Sidebar() {
       </div>
 
       <div className="p-3 border-t border-sidebar-border">
-        <UserMenu />
+        <UserMenu onAction={onAccountAction} />
       </div>
     </aside>
   )

@@ -1,12 +1,12 @@
-/**
- * Utilidades de fecha del panel.
- *
- * El dashboard trabaja sobre una fecha de referencia fija (la del diseño) para
- * que los datos de demostración sigan siendo coherentes. Al conectar una API
- * real basta con sustituir REFERENCE_TODAY por `new Date()`.
- */
+/** Utilidades de fecha del panel. */
 
-export const REFERENCE_TODAY = new Date(2026, 7, 25) // martes, 25 de agosto de 2026
+/**
+ * Hoy. El diseño original fijaba la semana del 24 al 30 de agosto de 2026, pero
+ * con un calendario mensual navegable y publicaciones programables esa fecha
+ * congelada dejaba la cola siempre en el pasado. Las publicaciones de
+ * demostración se sitúan en relación con este valor.
+ */
+export const REFERENCE_TODAY = new Date()
 
 export const WEEKDAY_LABELS = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM']
 

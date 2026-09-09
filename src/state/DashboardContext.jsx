@@ -26,6 +26,7 @@ function persistableSlots(slots) {
 
 export function DashboardProvider({ children }) {
   const [section, setSection] = useState('instagram')
+  const [loggedOut, setLoggedOut] = useState(false)
   const [range, setRange] = useState('30d')
   const [preview, setPreview] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
@@ -177,6 +178,8 @@ export function DashboardProvider({ children }) {
     () => ({
       section,
       setSection,
+      loggedOut,
+      setLoggedOut,
       range,
       setRange,
       kpis,
@@ -204,6 +207,7 @@ export function DashboardProvider({ children }) {
     }),
     [
       section,
+      loggedOut,
       range,
       kpis,
       preview,

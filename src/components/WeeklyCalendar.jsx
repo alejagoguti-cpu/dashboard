@@ -20,9 +20,16 @@ function weekTitle(offset) {
   return offset > 0 ? `En ${offset} semanas` : `Hace ${Math.abs(offset)} semanas`
 }
 
-export default function WeeklyCalendar({ onSchedule }) {
-  const { posts, removePost, weekOffset, setWeekOffset, selectedDay, setSelectedDay } =
+export default function WeeklyCalendar({ onSchedule, platform = 'instagram' }) {
+  const { posts: allPosts, removePost, weekOffset, setWeekOffset, selectedDay, setSelectedDay } =
     useDashboard()
+
+  // Este calendario pertenece al estudio de una plataforma: la cola de las demás
+  // se ve en su propio estudio y en el calendario mensual.
+  const posts = useMemo(
+    () => allPosts.filter((post) => (post.platform ?? 'instagram') === platform),
+    [allPosts, platform],
+  )
 
   const days = useMemo(() => {
     const monday = addDays(startOfWeek(REFERENCE_TODAY), weekOffset * 7)
@@ -152,7 +159,7 @@ export default function WeeklyCalendar({ onSchedule }) {
             <p className="text-xs text-slate-500">No hay publicaciones programadas.</p>
             <button
               type="button"
-              onClick={() => onSchedule(selected ? { date: selected } : {})}
+              onClick={() => onSchedule(selected ? { date: selected, platform } : { platform })}
               className="mt-2 text-xs font-medium text-slate-700 hover:text-slate-900 transition"
             >
               Programar una →
@@ -206,7 +213,7 @@ export default function WeeklyCalendar({ onSchedule }) {
           </div>
           <button
             type="button"
-            onClick={() => onSchedule({ date: freeSlot.at, format: 'Story' })}
+            onClick={() => onSchedule({ date: freeSlot.at, platform, format: 'Story' })}
             className="text-xs font-medium text-slate-700 hover:text-slate-900 transition"
           >
             Agendar

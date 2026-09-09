@@ -1,0 +1,80 @@
+{
+  "name": "Bitaxus · Generar hooks",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bitaxus/generate-hooks",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-bitaxus-generate-hooks",
+      "name": "Webhook",
+      "webhookId": "bitaxus-generate-hooks"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El panel envía { tool, batch }. `batch` sube en cada \"Recargar desde n8n\",\n// así que sirve para devolver una tanda distinta.\n// Sustituye esta lista por una llamada a tu modelo (nodo OpenAI, Anthropic, etc.).\nconst { batch = 0 } = $input.first().json.body ?? {};\n\nconst tandas = [\n  [\n    { text: 'Cobré $50K sin una sola llamada de ventas. Así lo hice:', metric: '78%' },\n    { text: 'Tu oferta no es cara. Tu oferta no se entiende.', metric: '71%' },\n    { text: 'Dejé de publicar todos los días y crecí el triple.', metric: '69%' },\n    { text: 'El error de los $10K que casi cierra mi agencia.', metric: '64%' },\n  ],\n  [\n    { text: '3 frases que suben tu ticket un 40% en la misma llamada.', metric: '74%' },\n    { text: 'Si tu DM empieza así, ya perdiste la venta.', metric: '70%' },\n    { text: 'Nadie compra tu servicio. Compran no tener el problema.', metric: '67%' },\n    { text: 'Lo que un cliente de $30K me dijo al rechazarme.', metric: '62%' },\n  ],\n  [\n    { text: 'Mi agenda de 4 horas semanales factura más que mi equipo de 6.', metric: '76%' },\n    { text: 'El contenido que menos me gustó publicar trajo 12 clientes.', metric: '68%' },\n    { text: 'Deja de vender resultados. Vende la decisión.', metric: '65%' },\n    { text: 'Cómo cobrar por adelantado sin sonar desesperado.', metric: '61%' },\n  ],\n];\n\nreturn tandas[batch % tandas.length].map((json) => ({ json }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-generate-hooks",
+      "name": "Componer resultados"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"results\": $input.all().map(item => item.json) } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        440,
+        0
+      ],
+      "id": "respond-generate-hooks",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Componer resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resultados": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

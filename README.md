@@ -45,7 +45,7 @@ Requiere Docker.
 ```bash
 npm run n8n:up       # levanta n8n en http://localhost:5678
                      # (la primera vez, crea la cuenta de propietario en el navegador)
-npm run n8n:import   # importa los 4 workflows, los activa y reinicia n8n
+npm run n8n:import   # importa los 6 workflows, los activa y reinicia n8n
 cp .env.example .env # ya trae la configuración local por defecto
 npm run dev
 ```
@@ -59,7 +59,7 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 
 ### Puesta en marcha contra tu propia instancia
 
-1. Importa los cuatro workflows de `n8n/workflows/` y actívalos. Desde el editor:
+1. Importa los seis workflows de `n8n/workflows/` y actívalos. Desde el editor:
    *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
    sirves el panel (vienen con `http://localhost:5173`).
@@ -78,17 +78,20 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 | `bitaxus/cancel-post` | POST | Al cancelar una publicación | `{ id }` |
 | `bitaxus/feed-order` | POST | Al pulsar *Guardar Orden* | `{ order: [{ id, title, scheduleId }] }` |
 | `bitaxus/dm-flows` | GET | Al abrir *Automatización DMs* | — |
+| `bitaxus/generate-hooks` | POST | Al abrir *Hooks & Copies* o recargar | `{ tool, batch }` |
+| `bitaxus/inspect-hashtags` | POST | Al abrir *Inspector de Hashtags* o recargar | `{ tool, batch }` |
 
-`schedule-post` puede devolver `{ executionId }` y el panel lo guarda junto a la
-publicación. `dm-flows` acepta `[{ text, metric }]` o `{ flows: [...] }`, y
-también `{ name, active }`, que se normaliza.
+`schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
+el panel guarda junto a la publicación. Las tres herramientas aceptan
+`[{ text, metric }]`, `{ results: [...] }` o `{ flows: [...] }`, y también
+`{ name, active }`, que se normaliza.
 
 ### Verificado contra n8n real
 
-Los cuatro workflows se importaron, activaron y ejecutaron en una instancia real
+Los seis workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los cuatro webhooks responden 200 con el cuerpo esperado.
+- Los seis webhooks responden 200 con el cuerpo esperado.
 - El panel dispara los workflows por el proxy de Vite y recibe el `executionId`
   real que devuelve n8n.
 - *Programar publicación* responde al instante y deja la ejecución en estado
@@ -107,20 +110,35 @@ escritos y el error de n8n se muestra tal cual. La lectura de flujos de DMs es l
 excepción: ante un fallo cae a los datos de ejemplo y avisa. Un 404 en un webhook
 casi siempre significa **workflow inactivo**, y así lo indica el mensaje.
 
+## Secciones
+
+Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vacía.
+
+| Sección | Qué hace |
+| --- | --- |
+| **Inicio** | Resumen: KPIs, próximas publicaciones de todas las plataformas, accesos a los estudios y mejor pieza del mes. |
+| **Noticias** | Titulares del sector con buscador y filtro por relevancia. Cada uno abre su detalle y permite crear una publicación a partir de él. |
+| **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
+| **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
+| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. |
+| **Instagram** | El estudio completo del diseño: feed 3×3, herramientas, calendario semanal y reels. |
+| **Analíticas** | KPIs por rango y tabla de reels comparada con la media del canal. |
+| **Calendario** | Vista mensual navegable con todas las publicaciones programadas, coloreadas por plataforma. |
+| **Competidores** | Cuentas en seguimiento, ordenables; se pueden añadir y quitar. |
+
 ## Qué hace cada control
 
 | Control | Comportamiento |
 | --- | --- |
-| Navegación lateral | Cambia de sección. Solo Instagram tiene pantalla diseñada; el resto muestra un estado vacío con vuelta al estudio. |
-| Tarjeta de usuario | Despliega el menú de cuenta (perfil, cambio de cuenta, configuración, cerrar sesión). |
+| Tarjeta de usuario | Menú de cuenta: **Ver perfil** (datos reales del panel), **Configuración** (el rango por defecto se aplica al instante) y **Cerrar sesión** (con confirmación y pantalla de vuelta). |
 | `Últimos 30 días` | Selector de rango (7 días / 30 días / 90 días / 12 meses). Recalcula los cuatro KPIs, con delta en rojo cuando la métrica cae. |
-| `Programar Publicación` | Abre el formulario de programación (título, formato, fecha, hora). Valida el título y puntúa la franja horaria. Con n8n conectado, dispara el workflow y solo cierra si responde bien. |
+| `Programar Publicación` | Formulario con plataforma, formato, fecha y hora. Los formatos cambian según la plataforma. Valida el título, puntúa la franja horaria y, con n8n conectado, dispara el workflow y solo cierra si responde bien. |
 | Cuadrícula del feed | Arrastrar reordena las piezas; pulsar abre el detalle con opción de eliminar o reprogramar. |
 | `Previsualizar` | Alterna la vista tipo perfil de Instagram: sin etiquetas, overlays ni hueco de subida. |
 | `Guardar Orden` | Persiste el orden en `localStorage` y lo envía a n8n si está conectado. Se habilita solo con cambios pendientes; `Descartar` revierte al último guardado. |
 | `Subir Publicación` | Selector de archivos y zona de arrastre. Acepta varias imágenes y las añade al feed. |
 | `Ver feed en Instagram` | Abre el perfil real en una pestaña nueva. |
-| Herramientas de contenido | Cada tarjeta abre sus resultados, con `Generar otra tanda` y copia al portapapeles. *Automatización DMs* lee los flujos en vivo de n8n cuando está conectado. |
+| Herramientas de contenido | Las tres abren sus resultados, con `Generar otra tanda` y copia al portapapeles. Con n8n conectado, **las tres** leen de su propio workflow. |
 | Flechas del calendario | Navegan entre semanas; la etiqueta central vuelve a la semana actual. |
 | Días de la semana | Filtran la lista de publicaciones a ese día; `Ver todas` quita el filtro. |
 | Publicación programada | La `×` la cancela en n8n y limpia su etiqueta en la cuadrícula. |
@@ -145,7 +163,11 @@ src/
 ├── lib/
 │   ├── dates.js                 Semana, etiquetas relativas y conversión de inputs
 │   └── n8n.js                   Cliente de webhooks: URLs, timeout y errores
+├── assets/                      Portadas SVG y avatar
 ├── components/
+│   ├── sections/                Una pantalla por entrada de la navegación
+│   ├── AccountModals.jsx        Perfil, configuración y cierre de sesión
+│   ├── LoggedOut.jsx            Pantalla tras cerrar sesión
 │   ├── Sidebar.jsx              Navegación y menú de cuenta
 │   ├── Header.jsx               Título, selector de rango y acción principal
 │   ├── KpiCards.jsx             Métricas del rango activo
@@ -154,7 +176,6 @@ src/
 │   ├── WeeklyCalendar.jsx       Semana, cola de publicaciones y espacio libre
 │   ├── TopReels.jsx             Ranking y análisis de reels
 │   ├── ScheduleModal.jsx        Formulario de programación
-│   ├── PlaceholderSection.jsx   Secciones sin pantalla diseñada
 │   ├── icons.jsx                Todos los SVG en un único módulo
 │   └── ui/                      Modal y avisos reutilizables
 └── data/dashboard.js            Contenido y métricas de demostración
@@ -170,10 +191,10 @@ API real solo requiere sustituir ese módulo.
 - **Persistencia.** El orden del feed y las publicaciones programadas se guardan en
   `localStorage`. Las imágenes que subes en la sesión son object URLs y no
   sobreviven a una recarga.
-- **Fecha de referencia.** El calendario parte del martes 25 de agosto de 2026, la
-  fecha del diseño, definida en `REFERENCE_TODAY` (`src/lib/dates.js`). Cámbiala por
-  `new Date()` para trabajar sobre la fecha real.
-- **Imágenes.** Las miniaturas apuntan al CDN temporal de Google Stitch
-  (`lh3.googleusercontent.com/aida-public/...`), del que salió el diseño. Esos
-  enlaces caducan: reemplaza las URLs del objeto `media` en `src/data/dashboard.js`
-  por assets propios antes de desplegar.
+- **Fechas.** El panel trabaja sobre la fecha real. El diseño fijaba la semana del
+  24 al 30 de agosto de 2026, pero con un calendario mensual navegable esa fecha
+  congelada dejaba la cola siempre en el pasado; las publicaciones de demostración
+  se sitúan ahora en relación con hoy.
+- **Imágenes.** Las portadas son SVG del propio repositorio (`src/assets`), no
+  enlaces externos: el panel no hace ninguna petición a un CDN y nada caduca.
+  Sustitúyelas por tus propios assets cuando tengas el material real.

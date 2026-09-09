@@ -33,6 +33,8 @@ export const WEBHOOKS = {
   cancelPost: 'bitaxus/cancel-post',
   saveFeedOrder: 'bitaxus/feed-order',
   dmFlows: 'bitaxus/dm-flows',
+  generateHooks: 'bitaxus/generate-hooks',
+  inspectHashtags: 'bitaxus/inspect-hashtags',
 }
 
 export class N8nError extends Error {
