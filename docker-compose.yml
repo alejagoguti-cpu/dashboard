@@ -1,0 +1,26 @@
+# Instancia local de n8n para desarrollar contra el panel.
+#
+#   docker compose up -d          arranca n8n en http://localhost:5678
+#   npm run n8n:import            importa y activa los workflows de n8n/workflows
+#
+# La primera vez, n8n pide crear una cuenta de propietario en el navegador.
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: bitaxus-n8n
+    restart: unless-stopped
+    ports:
+      - '5678:5678'
+    environment:
+      # Sin HTTPS en local, la cookie de sesión segura impediría iniciar sesión.
+      N8N_SECURE_COOKIE: 'false'
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Madrid}
+      # Debe coincidir con la URL desde la que se llaman los webhooks.
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows:ro
+
+volumes:
+  n8n_data:

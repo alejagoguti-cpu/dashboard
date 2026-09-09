@@ -35,19 +35,20 @@
     },
     {
       "parameters": {
-        "amount": 0,
-        "unit": "seconds"
+        "resume": "specificTime",
+        "dateTime": "={{ $json.publishAt }}"
       },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        440,
+        660,
         0
       ],
       "id": "wait-until-publish",
       "name": "Esperar a la hora",
       "webhookId": "bitaxus-wait-schedule",
-      "notes": "Cambia a 'At Specified Time' usando {{ $json.publishAt }} para publicar de verdad."
+      "notes": "La ejecución queda en espera hasta publishAt. Conecta después el nodo que publique de verdad (Instagram, HTTP Request, etc.).",
+      "notesInFlow": true
     },
     {
       "parameters": {
@@ -58,7 +59,7 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
       "position": [
-        660,
+        440,
         0
       ],
       "id": "respond-responder-al-panel",
@@ -81,18 +82,18 @@
       "main": [
         [
           {
-            "node": "Esperar a la hora",
+            "node": "Responder al panel",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Esperar a la hora": {
+    "Responder al panel": {
       "main": [
         [
           {
-            "node": "Responder al panel",
+            "node": "Esperar a la hora",
             "type": "main",
             "index": 0
           }

@@ -38,14 +38,35 @@ Los nodos Webhook declaran `supportsCORS`, traen su propia opción de orígenes
 permitidos y admiten Header Auth, que es lo que necesita un frontend. Lo que el
 panel necesita leer se expone con un nodo *Respond to Webhook*.
 
-### Puesta en marcha
+### Puesta en marcha con n8n local (recomendado para empezar)
 
-1. Importa los cuatro workflows de `n8n/workflows/` en tu instancia y actívalos.
+Requiere Docker.
+
+```bash
+npm run n8n:up       # levanta n8n en http://localhost:5678
+                     # (la primera vez, crea la cuenta de propietario en el navegador)
+npm run n8n:import   # importa los 4 workflows, los activa y reinicia n8n
+cp .env.example .env # ya trae la configuración local por defecto
+npm run dev
+```
+
+`npm run n8n:logs` sigue la salida de la instancia y `npm run n8n:down` la para.
+Los workflows quedan en un volumen de Docker, así que sobreviven al reinicio.
+
+El reinicio del paso 2 no es opcional: `publish:workflow` marca el workflow como
+activo en la base de datos, pero n8n no registra sus webhooks hasta arrancar de
+nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
+
+### Puesta en marcha contra tu propia instancia
+
+1. Importa los cuatro workflows de `n8n/workflows/` y actívalos. Desde el editor:
+   *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
-   sirves el panel (viene con `http://localhost:5173`).
+   sirves el panel (vienen con `http://localhost:5173`).
 3. Copia `.env.example` a `.env` y rellena:
    - **Desarrollo:** `VITE_N8N_BASE_URL=/n8n` y `N8N_PROXY_TARGET=https://tu-instancia`.
-     Las llamadas salen del mismo origen y Vite las reenvía, así que no hay CORS.
+     Las llamadas salen del mismo origen y Vite las reenvía, así que no hay CORS
+     y el paso 2 deja de importar.
    - **Producción:** `VITE_N8N_BASE_URL=https://tu-instancia`.
 4. Reinicia el servidor de desarrollo: Vite lee las variables al arrancar.
 
@@ -61,6 +82,22 @@ panel necesita leer se expone con un nodo *Respond to Webhook*.
 `schedule-post` puede devolver `{ executionId }` y el panel lo guarda junto a la
 publicación. `dm-flows` acepta `[{ text, metric }]` o `{ flows: [...] }`, y
 también `{ name, active }`, que se normaliza.
+
+### Verificado contra n8n real
+
+Los cuatro workflows se importaron, activaron y ejecutaron en una instancia real
+de n8n (2.35.7). Comprobado de punta a punta:
+
+- Los cuatro webhooks responden 200 con el cuerpo esperado.
+- El panel dispara los workflows por el proxy de Vite y recibe el `executionId`
+  real que devuelve n8n.
+- *Programar publicación* responde al instante y deja la ejecución en estado
+  `waiting` hasta la hora indicada, en vez de bloquear la respuesta. El nodo
+  *Respond to Webhook* va **antes** del *Wait* justo por eso: al revés, el panel
+  agotaría su timeout de 10 s esperando a la hora de publicar.
+- El CORS del webhook devuelve el origen configurado en **Allowed Origins**, de
+  modo que un origen distinto queda bloqueado por el navegador. De ahí que haya
+  que ajustarlo, o usar el proxy de desarrollo y olvidarse.
 
 ### Manejo de errores
 
