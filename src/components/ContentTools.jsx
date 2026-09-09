@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { contentTools } from '../data/dashboard.js'
+import * as n8n from '../lib/n8n.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import Modal from './ui/Modal.jsx'
 import { ChatIcon, HashtagIcon, SparklesIcon } from './icons.jsx'
@@ -10,17 +11,69 @@ const iconsById = {
   chat: ChatIcon,
 }
 
+/** Solo los flujos de DMs viven en n8n; el resto de herramientas son locales. */
+const LIVE_TOOL = 'dms'
+
+/**
+ * Normaliza la respuesta del workflow. Se aceptan tanto `[{...}]` como
+ * `{ flows: [...] }` porque un nodo "Respond to Webhook" puede devolver
+ * cualquiera de las dos formas según cómo se configure.
+ */
+function normalizeFlows(payload) {
+  const rows = Array.isArray(payload) ? payload : (payload?.flows ?? [])
+
+  return rows
+    .map((row) => ({
+      text: row.text ?? row.name ?? row.workflow ?? '',
+      metric: row.metric ?? row.status ?? (row.active ? 'Activo' : 'Pausado'),
+    }))
+    .filter((row) => row.text)
+}
+
 export default function ContentTools() {
-  const { notify } = useDashboard()
+  const { notify, connected } = useDashboard()
   const [openTool, setOpenTool] = useState(null)
   const [batch, setBatch] = useState(0)
+  const [live, setLive] = useState({ status: 'idle', rows: [], error: null })
 
   const tool = contentTools.find((item) => item.id === openTool)
-  const results = tool ? tool.batches[batch % tool.batches.length] : []
+  const isLive = connected && openTool === LIVE_TOOL
+
+  const results = isLive && live.status === 'ready'
+    ? live.rows
+    : (tool?.batches[batch % tool.batches.length] ?? [])
+
+  // Al abrir la herramienta de DMs con n8n conectado, los flujos se leen de allí.
+  useEffect(() => {
+    if (!isLive) return
+
+    let cancelled = false
+    setLive({ status: 'loading', rows: [], error: null })
+
+    n8n
+      .callWebhook(n8n.WEBHOOKS.dmFlows, { method: 'GET' })
+      .then((payload) => {
+        if (cancelled) return
+        const rows = normalizeFlows(payload)
+        setLive(
+          rows.length > 0
+            ? { status: 'ready', rows, error: null }
+            : { status: 'error', rows: [], error: 'El workflow no devolvió ningún flujo' },
+        )
+      })
+      .catch((error) => {
+        if (!cancelled) setLive({ status: 'error', rows: [], error: error.message })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLive, batch])
 
   function open(id) {
     setOpenTool(id)
     setBatch(0)
+    setLive({ status: 'idle', rows: [], error: null })
   }
 
   async function copyResults() {
@@ -57,8 +110,15 @@ export default function ContentTools() {
               className="text-left bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 transition group flex flex-col justify-between"
             >
               <div>
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-2.5">
-                  <Icon className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                    <Icon className="w-3.5 h-3.5" />
+                  </div>
+                  {connected && id === LIVE_TOOL && (
+                    <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                      n8n
+                    </span>
+                  )}
                 </div>
                 <h4 className="text-xs font-semibold text-slate-900">{title}</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed mt-1">{description}</p>
@@ -81,7 +141,8 @@ export default function ContentTools() {
             <button
               type="button"
               onClick={copyResults}
-              className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition"
+              disabled={results.length === 0}
+              className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition disabled:opacity-40"
             >
               Copiar resultados
             </button>
@@ -90,12 +151,25 @@ export default function ContentTools() {
               onClick={() => setBatch((value) => value + 1)}
               className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
             >
-              Generar otra tanda
+              {isLive ? 'Recargar desde n8n' : 'Generar otra tanda'}
             </button>
           </>
         }
       >
-        <ul className="space-y-2">
+        {isLive && live.status === 'loading' && (
+          <p className="text-xs text-slate-500 py-6 text-center">Consultando n8n…</p>
+        )}
+
+        {isLive && live.status === 'error' && (
+          <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg">
+            <p className="text-xs text-rose-700">{live.error}</p>
+            <p className="text-[11px] text-rose-600/80 mt-1">
+              Mostrando los flujos de ejemplo mientras tanto.
+            </p>
+          </div>
+        )}
+
+        <ul className={`space-y-2 ${isLive && live.status === 'error' ? 'mt-3' : ''}`}>
           {results.map((item) => (
             <li
               key={item.text}
@@ -108,9 +182,11 @@ export default function ContentTools() {
             </li>
           ))}
         </ul>
+
         <p className="text-[11px] text-slate-400 mt-3">
-          {tool?.resultLabel} · tanda {tool ? (batch % tool.batches.length) + 1 : 0} de{' '}
-          {tool?.batches.length}
+          {isLive && live.status === 'ready'
+            ? `${tool?.resultLabel} · datos en vivo de n8n`
+            : `${tool?.resultLabel} · tanda ${tool ? (batch % tool.batches.length) + 1 : 0} de ${tool?.batches.length}`}
         </p>
       </Modal>
     </div>

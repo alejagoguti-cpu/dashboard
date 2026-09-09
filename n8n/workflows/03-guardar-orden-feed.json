@@ -1,0 +1,80 @@
+{
+  "name": "Bitaxus · Guardar orden del feed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bitaxus/feed-order",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-bitaxus-feed-order",
+      "name": "Webhook",
+      "webhookId": "bitaxus-feed-order"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El panel envía { order: [{ id, title, scheduleId }] } en el orden visual\n// del feed, de la primera casilla a la última.\nconst { order } = $input.first().json.body ?? $input.first().json;\n\nif (!Array.isArray(order)) throw new Error('Se esperaba un array en \"order\"');\n\nreturn order.map((slot, index) => ({\n  json: { ...slot, position: index + 1, savedAt: new Date().toISOString() },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-registrar-orden",
+      "name": "Registrar orden"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"saved\": $items().length } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        440,
+        0
+      ],
+      "id": "respond-responder-al-panel",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Registrar orden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar orden": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

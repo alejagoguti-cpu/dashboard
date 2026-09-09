@@ -17,7 +17,12 @@ export default function Toasts() {
           className="pointer-events-auto flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg bg-slate-900 text-white shadow-lg"
         >
           <span className="flex items-center gap-2 text-xs font-medium">
-            {tone === 'success' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+            {tone === 'success' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+            )}
+            {tone === 'error' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0" />
+            )}
             {message}
           </span>
           <button

@@ -53,6 +53,28 @@ function RangePicker() {
   )
 }
 
+function ConnectionPill() {
+  const { connected } = useDashboard()
+
+  return (
+    <span
+      title={
+        connected
+          ? 'Las acciones del panel disparan workflows de n8n'
+          : 'Define VITE_N8N_BASE_URL para conectar el panel a n8n'
+      }
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+        connected
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          : 'bg-slate-100 text-slate-500 border-slate-200'
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+      {connected ? 'n8n conectado' : 'n8n sin configurar'}
+    </span>
+  )
+}
+
 export default function Header({ onSchedule }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
@@ -65,6 +87,7 @@ export default function Header({ onSchedule }) {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             {account.handle}
           </span>
+          <ConnectionPill />
         </div>
         <p className="text-xs text-slate-500 mt-1">
           Planificación visual de feed, simulación estética y programación de publicaciones y reels.

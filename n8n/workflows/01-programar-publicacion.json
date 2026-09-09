@@ -1,0 +1,107 @@
+{
+  "name": "Bitaxus · Programar publicación",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bitaxus/schedule-post",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-bitaxus-schedule-post",
+      "name": "Webhook",
+      "webhookId": "bitaxus-schedule-post"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El panel envía { id, at, format, title, score }.\n// `at` es hora local del navegador, sin zona: se interpreta con la de n8n.\nconst post = $input.first().json.body ?? $input.first().json;\n\nif (!post.title || !post.at) {\n  throw new Error('Faltan los campos obligatorios: title y at');\n}\n\nconst publishAt = new Date(post.at);\n\nif (Number.isNaN(publishAt.getTime())) {\n  throw new Error(`Fecha no válida: ${post.at}`);\n}\n\nreturn [{\n  json: {\n    ...post,\n    publishAt: publishAt.toISOString(),\n    receivedAt: new Date().toISOString(),\n    executionId: $execution.id,\n  },\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-validar-publicación",
+      "name": "Validar publicación"
+    },
+    {
+      "parameters": {
+        "amount": 0,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        0
+      ],
+      "id": "wait-until-publish",
+      "name": "Esperar a la hora",
+      "webhookId": "bitaxus-wait-schedule",
+      "notes": "Cambia a 'At Specified Time' usando {{ $json.publishAt }} para publicar de verdad."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"executionId\": $execution.id } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        660,
+        0
+      ],
+      "id": "respond-responder-al-panel",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validar publicación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar publicación": {
+      "main": [
+        [
+          {
+            "node": "Esperar a la hora",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar a la hora": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

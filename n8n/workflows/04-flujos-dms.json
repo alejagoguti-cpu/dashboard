@@ -1,0 +1,80 @@
+{
+  "name": "Bitaxus · Flujos de DMs",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/dm-flows",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "webhook-bitaxus-dm-flows",
+      "name": "Webhook",
+      "webhookId": "bitaxus-dm-flows"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El panel espera [{ text, metric }] o { flows: [...] }.\n// Sustituye esta lista fija por los workflows reales de tu instancia: puedes\n// leerlos con un nodo n8n (n8n-nodes-base.n8n), que sí usa la Public API desde\n// el servidor, donde la clave está a salvo.\nreturn [\n  { json: { text: 'Comentario \"GUIA\" → envía PDF Embudo B2B', metric: 'Activo' } },\n  { json: { text: 'Comentario \"AUDIT\" → agenda diagnóstico', metric: 'Activo' } },\n  { json: { text: 'Nuevo seguidor → mensaje de bienvenida', metric: 'Pausado' } },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-componer-flujos",
+      "name": "Componer flujos"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"flows\": $input.all().map(item => item.json) } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        440,
+        0
+      ],
+      "id": "respond-responder-al-panel",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Componer flujos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer flujos": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

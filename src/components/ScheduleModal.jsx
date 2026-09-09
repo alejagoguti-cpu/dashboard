@@ -12,8 +12,9 @@ const field =
  * (desde una pieza del feed), fecha (desde el calendario) y formato.
  */
 export default function ScheduleModal({ draft, onClose }) {
-  const { addPost } = useDashboard()
+  const { addPost, busy } = useDashboard()
   const open = Boolean(draft)
+  const sending = busy === 'addPost'
 
   const [title, setTitle] = useState('')
   const [format, setFormat] = useState(postFormats[0])
@@ -34,7 +35,7 @@ export default function ScheduleModal({ draft, onClose }) {
     setError('')
   }, [draft])
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault()
 
     if (!title.trim()) {
@@ -49,7 +50,7 @@ export default function ScheduleModal({ draft, onClose }) {
       return
     }
 
-    addPost({
+    const ok = await addPost({
       id: `post-${Date.now()}`,
       at: `${date}T${time}`,
       format,
@@ -58,7 +59,8 @@ export default function ScheduleModal({ draft, onClose }) {
       score: at.getHours() >= 19 && at.getHours() <= 21 ? 92 : 74,
     })
 
-    onClose()
+    // Si n8n rechaza la petición el diálogo sigue abierto con los datos escritos.
+    if (ok) onClose()
   }
 
   return (
@@ -79,9 +81,10 @@ export default function ScheduleModal({ draft, onClose }) {
           <button
             type="submit"
             form="schedule-form"
-            className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
+            disabled={sending}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition disabled:opacity-60"
           >
-            Programar
+            {sending ? 'Programando…' : 'Programar'}
           </button>
         </>
       }

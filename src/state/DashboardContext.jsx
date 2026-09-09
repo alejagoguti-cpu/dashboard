@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import useLocalStorage from '../hooks/useLocalStorage.js'
+import * as n8n from '../lib/n8n.js'
 import {
   initialFeedSlots,
   initialScheduledPosts,
@@ -39,6 +40,10 @@ export function DashboardProvider({ children }) {
 
   const [toasts, setToasts] = useState([])
   const toastId = useRef(0)
+
+  // Operaciones de n8n en vuelo, para deshabilitar los botones que las disparan.
+  const [busy, setBusy] = useState(null)
+  const connected = n8n.isConnected()
 
   const notify = useCallback((message, tone = 'default') => {
     const id = ++toastId.current
@@ -87,11 +92,28 @@ export function DashboardProvider({ children }) {
     setDirty(true)
   }, [])
 
-  const saveOrder = useCallback(() => {
-    setSavedSlots(persistableSlots(slots))
+  const saveOrder = useCallback(async () => {
+    const order = persistableSlots(slots)
+
+    if (connected) {
+      setBusy('saveOrder')
+      try {
+        await n8n.callWebhook(n8n.WEBHOOKS.saveFeedOrder, {
+          body: { order: order.map(({ id, title, scheduleId }) => ({ id, title, scheduleId })) },
+        })
+      } catch (error) {
+        notify(error.message, 'error')
+        return false
+      } finally {
+        setBusy(null)
+      }
+    }
+
+    setSavedSlots(order)
     setDirty(false)
-    notify('Orden del feed guardado', 'success')
-  }, [slots, setSavedSlots, notify])
+    notify(connected ? 'Orden guardado y enviado a n8n' : 'Orden del feed guardado', 'success')
+    return true
+  }, [slots, setSavedSlots, notify, connected])
 
   const resetOrder = useCallback(() => {
     setSlots(savedSlots)
@@ -100,25 +122,55 @@ export function DashboardProvider({ children }) {
   }, [savedSlots, notify])
 
   const addPost = useCallback(
-    (post) => {
+    async (post) => {
+      let scheduled = post
+
+      if (connected) {
+        setBusy('addPost')
+        try {
+          const result = await n8n.callWebhook(n8n.WEBHOOKS.schedulePost, { body: post })
+          // El workflow puede devolver su propio identificador de ejecución.
+          scheduled = { ...post, executionId: result?.executionId ?? null }
+        } catch (error) {
+          notify(error.message, 'error')
+          return false
+        } finally {
+          setBusy(null)
+        }
+      }
+
       setPosts((current) =>
-        [...current, post].sort((a, b) => new Date(a.at) - new Date(b.at)),
+        [...current, scheduled].sort((a, b) => new Date(a.at) - new Date(b.at)),
       )
-      notify('Publicación programada', 'success')
+      notify(connected ? 'Publicación programada en n8n' : 'Publicación programada', 'success')
+      return true
     },
-    [setPosts, notify],
+    [setPosts, notify, connected],
   )
 
   const removePost = useCallback(
-    (id) => {
+    async (id) => {
+      if (connected) {
+        setBusy(`cancel-${id}`)
+        try {
+          await n8n.callWebhook(n8n.WEBHOOKS.cancelPost, { body: { id } })
+        } catch (error) {
+          notify(error.message, 'error')
+          return false
+        } finally {
+          setBusy(null)
+        }
+      }
+
       setPosts((current) => current.filter((post) => post.id !== id))
       // La etiqueta de la cuadrícula depende del programado: al cancelar, desaparece.
       setSlots((current) =>
         current.map((slot) => (slot.scheduleId === id ? { ...slot, scheduleId: null } : slot)),
       )
       notify('Publicación cancelada')
+      return true
     },
-    [setPosts, notify],
+    [setPosts, notify, connected],
   )
 
   const value = useMemo(
@@ -147,6 +199,8 @@ export function DashboardProvider({ children }) {
       toasts,
       notify,
       dismissToast,
+      connected,
+      busy,
     }),
     [
       section,
@@ -168,6 +222,8 @@ export function DashboardProvider({ children }) {
       toasts,
       notify,
       dismissToast,
+      connected,
+      busy,
     ],
   )
 

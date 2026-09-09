@@ -120,8 +120,9 @@ function UploadCell({ onFiles }) {
 }
 
 export default function FeedPlanner({ onSchedule }) {
-  const { slots, posts, preview, setPreview, moveSlot, addSlot, removeSlot, dirty, saveOrder, resetOrder, notify } =
+  const { slots, posts, preview, setPreview, moveSlot, addSlot, removeSlot, dirty, saveOrder, resetOrder, notify, busy } =
     useDashboard()
+  const saving = busy === 'saveOrder'
 
   const [dragId, setDragId] = useState(null)
   const [detail, setDetail] = useState(null)
@@ -195,10 +196,10 @@ export default function FeedPlanner({ onSchedule }) {
           <button
             type="button"
             onClick={saveOrder}
-            disabled={!dirty}
+            disabled={!dirty || saving}
             className="px-2.5 py-1 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition disabled:opacity-40 disabled:hover:bg-slate-900"
           >
-            Guardar Orden
+            {saving ? 'Guardando…' : 'Guardar Orden'}
           </button>
         </div>
       </div>
