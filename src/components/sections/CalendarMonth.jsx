@@ -69,7 +69,7 @@ export default function CalendarMonth({ onSchedule }) {
             type="button"
             onClick={() => setOffset(0)}
             aria-label="Volver al mes actual"
-            className="text-xs font-medium text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-300 transition capitalize min-w-40"
+            className="text-xs font-medium text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-300 transition first-letter:uppercase min-w-40"
           >
             {monthLabel}
           </button>
