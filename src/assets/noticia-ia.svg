@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img">
+  <defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#4c1d95"/><stop offset="1" stop-color="#171717"/></linearGradient></defs>
+  <rect width="640" height="360" fill="url(#b)"/>
+  <g opacity="0.2" fill="none" stroke="#ffffff" stroke-width="9">
+    <circle cx="150" cy="105" r="34"/><circle cx="280" cy="65" r="26"/>
+    <circle cx="300" cy="160" r="30"/><circle cx="420" cy="110" r="22"/>
+    <path d="M181 96 L256 74 M176 122 L272 152 M328 152 L400 122 M304 82 L400 104"/></g>
+  <text x="48" y="212" font-family="Inter, system-ui, sans-serif" font-size="15"
+        font-weight="700" letter-spacing="3.5" fill="#c4b5fd">INTELIGENCIA ARTIFICIAL</text>
+  <text x="48" y="262" font-family="Inter, system-ui, sans-serif" font-size="34"
+        font-weight="800" fill="#ffffff"><tspan x="48" dy="0">Agencias que</tspan><tspan x="48" dy="42">automatizan</tspan></text>
+</svg>

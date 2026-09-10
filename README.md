@@ -289,7 +289,7 @@ Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vac
 | Sección | Qué hace |
 | --- | --- |
 | **Inicio** | Resumen: KPIs, próximas publicaciones de todas las plataformas, accesos a los estudios y mejor pieza del mes. |
-| **Noticias** | Titulares del sector con buscador y filtro por relevancia. Cada uno abre su detalle y permite crear una publicación a partir de él. |
+| **Noticias** | Prensa colombiana e internacional. Las piezas destacadas llevan portada; el resto va en lista compacta. Buscador y filtros por país y por relevancia. Cada titular abre su detalle y permite crear una publicación a partir de él. |
 | **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
 | **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
 | **YouTube / LinkedIn** | Estudio de cada plataforma: sus KPIs y su propia cola. Con la API conectada añaden lo ya publicado, con imagen y rendimiento real. |
@@ -359,6 +359,14 @@ Toda la interfaz se alimenta de `src/data/dashboard.js`, así que conectarla a u
 API real solo requiere sustituir ese módulo.
 
 ## Notas
+
+- **Los titulares son de ejemplo.** Están atribuidos a medios reales porque son
+  los que este panel agregaría, pero no son noticias publicadas: el propio panel
+  lo advierte, en la lista y en el detalle. El aviso desaparecerá cuando haya
+  una fuente conectada.
+- **Los medios no usan sus logos.** Cada uno se identifica con un monograma
+  sobre un color derivado de su propio nombre, así que es estable y no hay
+  ningún recurso de marca que mantener.
 
 - **Persistencia.** El orden del feed y las publicaciones programadas se guardan en
   `localStorage`. Las imágenes que subes en la sesión son object URLs y no
