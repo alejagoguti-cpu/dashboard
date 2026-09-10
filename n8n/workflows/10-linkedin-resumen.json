@@ -1,0 +1,229 @@
+{
+  "name": "Bitaxus · LinkedIn · Resumen",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/li-overview",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-li-overview",
+      "name": "Webhook",
+      "webhookId": "bitaxus-li-overview"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// LinkedIn solo expone analíticas de PÁGINAS DE EMPRESA, no de perfiles\n// personales, y a través de la Community Management API, que exige aprobación\n// en el Partner Program de LinkedIn.\n//\n// ORG_ID es el identificador numérico de tu página:\n//   https://www.linkedin.com/company/<nombre>/  →  Admin → Page info\nconst AJUSTES = {\n  ORG_ID: 'PON_AQUI_TU_ORG_ID',\n  // Versión de la API en formato AAAAMM. La cabecera es obligatoria.\n  LINKEDIN_VERSION: '202604',\n  API_HOST: 'https://api.linkedin.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst ORG_ID = env.LINKEDIN_ORG_ID || AJUSTES.ORG_ID;\nconst VERSION = env.LINKEDIN_VERSION || AJUSTES.LINKEDIN_VERSION;\nconst HOST = env.LINKEDIN_API_HOST || AJUSTES.API_HOST;\n\nif (ORG_ID === 'PON_AQUI_TU_ORG_ID') {\n  throw new Error('Falta ORG_ID: rellénalo en el nodo Configuración o define LINKEDIN_ORG_ID.');\n}\n\nconst ORG_URN = `urn:li:organization:${ORG_ID}`;\n\nconst RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90, '12m': 365 };\nconst range = $input.first().json.query?.range ?? '30d';\nconst days = RANGE_DAYS[range] ?? 30;\n\n// LinkedIn espera milisegundos, no segundos como Meta.\nconst end = Date.now();\nconst start = end - days * 86400000;\n\nreturn [{ json: { orgId: ORG_ID, orgUrn: ORG_URN, version: VERSION, host: HOST, range, days, start, end } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuración",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.host }}/rest/organizations/{{ $json.orgId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "={{ $('Configuración').first().json.version }}"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-página",
+      "name": "Página",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuración').first().json.host }}/rest/networkSizes/{{ $('Configuración').first().json.orgUrn }}?edgeType=CompanyFollowedByMember",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "={{ $('Configuración').first().json.version }}"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "http-seguidores",
+      "name": "Seguidores",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuración').first().json.host }}/rest/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity={{ $('Configuración').first().json.orgUrn }}&timeIntervals.timeGranularityType=DAY&timeIntervals.timeRange.start={{ $('Configuración').first().json.start }}&timeIntervals.timeRange.end={{ $('Configuración').first().json.end }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "LinkedIn-Version",
+              "value": "={{ $('Configuración').first().json.version }}"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "http-estadísticas-de-publicaciones",
+      "name": "Estadísticas de publicaciones",
+      "onError": "continueRegularOutput",
+      "notes": "Requiere el permiso r_organization_social, sujeto al Partner Program de LinkedIn.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une página, seguidores y estadísticas en la forma que espera el panel.\nconst cfg = $('Configuración').first().json;\nconst org = $('Página').first().json ?? {};\nconst net = $('Seguidores').first().json ?? {};\nconst shares = $('Estadísticas de publicaciones').first().json ?? {};\n\nconst errors = [org.message, net.message, shares.message].filter(Boolean);\n\n// La respuesta trae un elemento por intervalo; se suman todos.\nconst totals = { impressionCount: 0, clickCount: 0, likeCount: 0, commentCount: 0, shareCount: 0 };\nlet any = false;\nfor (const el of shares.elements ?? []) {\n  const t = el.totalShareStatistics ?? el;\n  for (const k of Object.keys(totals)) {\n    if (typeof t[k] === 'number') { totals[k] += t[k]; any = true; }\n  }\n}\n\nconst interactions = totals.likeCount + totals.commentCount + totals.shareCount;\nconst engagement = any && totals.impressionCount ? (interactions / totals.impressionCount) * 100 : null;\n\nconst miles = (n) => String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\nconst fmt = (n) => (n == null ? null\n  : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M'\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K'\n  : String(n));\n\nconst followers = typeof net.firstDegreeSize === 'number' ? net.firstDegreeSize : null;\n\nconst captions = { '7d': 'vs semana anterior', '30d': 'vs mes anterior',\n                   '90d': 'vs trimestre anterior', '12m': 'vs año anterior' };\n\nreturn [{ json: {\n  source: 'linkedin',\n  range: cfg.range,\n  errors,\n  account: {\n    name: org.localizedName ?? null,\n    handle: org.vanityName ? 'company/' + org.vanityName : null,\n    audience: followers == null ? null : miles(followers) + ' seguidores',\n  },\n  kpis: {\n    impresiones: { value: any ? fmt(totals.impressionCount) : null, caption: captions[cfg.range] },\n    interaccion: { value: engagement == null ? null : engagement.toFixed(1) + '%', caption: 'interacciones / impresiones' },\n    // El alta de seguidores del periodo vive en otro endpoint; aquí va el total.\n    contactos: { value: followers == null ? null : fmt(followers), caption: 'seguidores de la página' },\n    clicks: { value: any ? miles(totals.clickCount) : null, caption: 'clicks en las publicaciones' },\n  },\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "code-componer-resumen",
+      "name": "Componer resumen"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "respond-1320",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Página",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Página": {
+      "main": [
+        [
+          {
+            "node": "Seguidores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seguidores": {
+      "main": [
+        [
+          {
+            "node": "Estadísticas de publicaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Estadísticas de publicaciones": {
+      "main": [
+        [
+          {
+            "node": "Componer resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resumen": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

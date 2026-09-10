@@ -62,7 +62,7 @@ Requiere Docker.
 ```bash
 npm run n8n:up       # levanta n8n en http://localhost:5678
                      # (la primera vez, crea la cuenta de propietario en el navegador)
-npm run n8n:import   # importa los 9 workflows, los activa y reinicia n8n
+npm run n8n:import   # importa los 11 workflows, los activa y reinicia n8n
 cp .env.example .env # ya trae la configuración local por defecto
 npm run dev
 ```
@@ -76,7 +76,7 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 
 ### Puesta en marcha contra tu propia instancia
 
-1. Importa los nueve workflows de `n8n/workflows/` y actívalos. Desde el editor:
+1. Importa los once workflows de `n8n/workflows/` y actívalos. Desde el editor:
    *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
    sirves el panel (vienen con `http://localhost:5173`).
@@ -132,6 +132,40 @@ Los nombres de métrica cambian entre versiones de la Graph API. Están agrupado
 en una constante `METRICS` al principio del nodo *Configuración* de cada
 workflow, para que ajustarlos sea una línea.
 
+## Datos reales de LinkedIn
+
+Misma mecánica que Instagram, con una diferencia que conviene saber antes de
+empezar: **LinkedIn no ofrece analíticas de perfiles personales**. Instagram te
+da los datos de tu propia cuenta; LinkedIn solo los de **páginas de empresa**, a
+través de la Community Management API.
+
+Y esa API no es autoservicio: hay que solicitar acceso al **Partner Program** de
+LinkedIn y que te aprueben. Sin esa aprobación las llamadas fallan, el estudio
+se queda con los datos de ejemplo y lo indica con la etiqueta **demo**.
+
+### Qué necesitas
+
+1. Una **página de empresa** en LinkedIn de la que seas administrador.
+2. Una app en [LinkedIn Developers](https://www.linkedin.com/developers/)
+   verificada con esa página.
+3. Acceso aprobado a la **Community Management API**, con los permisos
+   `r_organization_social` (estadísticas) y `rw_organization_admin`.
+4. El **ORG_ID** numérico de la página (*Admin → Page info*).
+
+### Cómo se configura
+
+1. En n8n, crea una credencial **OAuth2 genérica** con las URLs de LinkedIn
+   (`https://www.linkedin.com/oauth/v2/authorization` y `.../accessToken`) y los
+   permisos de arriba. La credencial `LinkedIn Community Management` que trae
+   n8n de serie sirve para publicar, no para leer estadísticas: sus scopes son
+   de escritura.
+2. Asigna esa credencial a los nodos HTTP de los dos workflows de LinkedIn.
+3. Pon tu `ORG_ID` en el nodo *Configuración*, o define `LINKEDIN_ORG_ID`.
+4. Activa los workflows y reinicia n8n.
+
+La cabecera `LinkedIn-Version` es obligatoria y usa formato `AAAAMM`; el valor
+por defecto (`202604`) es el mismo que trae el nodo oficial de n8n.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -145,6 +179,8 @@ workflow, para que ajustarlos sea una línea.
 | `bitaxus/ig-overview` | GET | Al cargar y al cambiar de rango | `?range=7d\|30d\|90d\|12m` |
 | `bitaxus/ig-media` | GET | Al cargar el feed | — |
 | `bitaxus/ig-reels` | GET | Al cargar el ranking de reels | — |
+| `bitaxus/li-overview` | GET | Al abrir el estudio de LinkedIn | `?range=7d\|30d\|90d\|12m` |
+| `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | — |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -153,15 +189,16 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los nueve workflows se importaron, activaron y ejecutaron en una instancia real
+Los once workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los nueve webhooks responden 200 con el cuerpo esperado.
-- Los tres de Instagram se probaron contra una **Graph API simulada** que
-  reproduce las respuestas de Meta: el panel pinta perfil, KPIs, feed y reels
-  reales. Lo que **no** se ha podido verificar es la API de Meta en sí — este
-  entorno no tiene acceso a ella y su documentación está bloqueada, así que los
-  nombres de métrica hay que confirmarlos contra la versión que uses.
+- Los once webhooks responden 200 con el cuerpo esperado.
+- Los de Instagram y LinkedIn se probaron contra **APIs simuladas** que
+  reproducen las respuestas de Meta y de LinkedIn: el panel pinta perfil, KPIs,
+  feed, reels y publicaciones reales. Lo que **no** se ha podido verificar son
+  las APIs en sí — este entorno no las alcanza y su documentación está
+  bloqueada, así que los nombres de métrica y los endpoints hay que
+  confirmarlos contra la versión que uses.
 - n8n activa desde una *versión publicada*: importar no basta, hay que publicar
   y reiniciar. Editar la fila del workflow en la base de datos no surte efecto.
 - El panel dispara los workflows por el proxy de Vite y recibe el `executionId`
@@ -192,7 +229,7 @@ Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vac
 | **Noticias** | Titulares del sector con buscador y filtro por relevancia. Cada uno abre su detalle y permite crear una publicación a partir de él. |
 | **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
 | **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
-| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. |
+| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. LinkedIn añade, con la API conectada, el rendimiento real de lo ya publicado. |
 | **Instagram** | El estudio completo del diseño: feed 3×3, herramientas, calendario semanal y reels. |
 | **Analíticas** | KPIs por rango y tabla de reels comparada con la media del canal. |
 | **Calendario** | Vista mensual navegable con todas las publicaciones programadas, coloreadas por plataforma. |

@@ -38,6 +38,8 @@ export const WEBHOOKS = {
   igOverview: 'bitaxus/ig-overview',
   igMedia: 'bitaxus/ig-media',
   igReels: 'bitaxus/ig-reels',
+  liOverview: 'bitaxus/li-overview',
+  liPosts: 'bitaxus/li-posts',
 }
 
 export class N8nError extends Error {
