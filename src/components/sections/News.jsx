@@ -16,6 +16,8 @@ const relevance = {
 
 const scopes = { co: 'Colombia', intl: 'Internacional' }
 
+const platformLabels = { instagram: 'Instagram', youtube: 'YouTube', linkedin: 'LinkedIn' }
+
 /**
  * Identidad visual de cada medio sin usar sus logos: iniciales sobre un color
  * derivado del propio nombre, así que es estable y no hay que mantener nada.
@@ -82,6 +84,7 @@ export default function News({ onSchedule }) {
   const [query, setQuery] = useState('')
   const [level, setLevel] = useState('todas')
   const [scope, setScope] = useState('todos')
+  const [platform, setPlatform] = useState('todas')
   const [detail, setDetail] = useState(null)
 
   // Con el feed RSS conectado mandan las noticias reales; si no, las de ejemplo.
@@ -95,24 +98,30 @@ export default function News({ onSchedule }) {
       (item) =>
         (level === 'todas' || item.relevance === level) &&
         (scope === 'todos' || item.scope === scope) &&
+        (platform === 'todas' || item.platforms?.includes(platform)) &&
         (needle === '' ||
           item.title.toLowerCase().includes(needle) ||
           item.source.toLowerCase().includes(needle) ||
           item.topic.toLowerCase().includes(needle)),
     )
-  }, [items, query, level, scope])
+  }, [items, query, level, scope, platform])
 
   const counts = useMemo(() => {
     const tally = (key) =>
       items.reduce((acc, item) => ({ ...acc, [item[key]]: (acc[item[key]] ?? 0) + 1 }), {})
-    return { ...tally('relevance'), ...tally('scope') }
+    // Una noticia puede hablar de varias plataformas, así que se cuentan aparte.
+    const byPlatform = items.reduce((acc, item) => {
+      for (const id of item.platforms ?? []) acc[id] = (acc[id] ?? 0) + 1
+      return acc
+    }, {})
+    return { ...tally('relevance'), ...tally('scope'), ...byPlatform }
   }, [items])
 
   // Las piezas con portada encabezan; el resto va en una lista compacta.
   const featured = visible.filter((item) => item.cover).slice(0, 3)
   const rest = visible.filter((item) => !featured.includes(item))
 
-  const filtering = query || level !== 'todas' || scope !== 'todos'
+  const filtering = query || level !== 'todas' || scope !== 'todos' || platform !== 'todas'
 
   return (
     <>
@@ -142,6 +151,15 @@ export default function News({ onSchedule }) {
           ]}
           value={scope}
           onChange={setScope}
+          counts={counts}
+        />
+        <FilterGroup
+          options={[
+            { id: 'todas', label: 'Cualquiera' },
+            ...Object.entries(platformLabels).map(([id, label]) => ({ id, label })),
+          ]}
+          value={platform}
+          onChange={setPlatform}
           counts={counts}
         />
         <FilterGroup
@@ -200,6 +218,7 @@ export default function News({ onSchedule }) {
               setQuery('')
               setLevel('todas')
               setScope('todos')
+              setPlatform('todas')
             }}
             className="mt-2 text-xs font-medium text-slate-700 hover:text-slate-900 transition"
           >
@@ -239,6 +258,19 @@ export default function News({ onSchedule }) {
                     <span className="text-[11px] text-slate-400">{ago(item.minutes)}</span>
                     <span className={`${chip} ml-auto`}>{item.topic}</span>
                   </div>
+
+                  {item.platforms?.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {item.platforms.map((id) => (
+                        <span
+                          key={id}
+                          className="text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 rounded"
+                        >
+                          {platformLabels[id]}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-3 text-balance">
                     {item.title}
@@ -344,6 +376,11 @@ export default function News({ onSchedule }) {
               <span className="font-medium text-slate-700">{detail.source}</span>
               <span className={chip}>{scopes[detail.scope]}</span>
               <span className={chip}>{detail.topic}</span>
+              {detail.platforms?.map((id) => (
+                <span key={id} className={chip}>
+                  {platformLabels[id]}
+                </span>
+              ))}
               <span className={`inline-flex items-center gap-1.5 ${relevance[detail.relevance].text}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${relevance[detail.relevance].dot}`} />
                 {relevance[detail.relevance].label}

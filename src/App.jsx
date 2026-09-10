@@ -4,6 +4,7 @@ import ContentTools from './components/ContentTools.jsx'
 import FeedPlanner from './components/FeedPlanner.jsx'
 import Header from './components/Header.jsx'
 import KpiCards from './components/KpiCards.jsx'
+import PlatformNews from './components/sections/PlatformNews.jsx'
 import LoggedOut from './components/LoggedOut.jsx'
 import ScheduleModal from './components/ScheduleModal.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -22,6 +23,8 @@ import Toasts from './components/ui/Toasts.jsx'
 import { DashboardProvider, useDashboard } from './state/DashboardContext.jsx'
 
 function InstagramStudio({ onSchedule }) {
+  const { setSection } = useDashboard()
+
   return (
     <>
       <Header onSchedule={onSchedule} />
@@ -35,6 +38,11 @@ function InstagramStudio({ onSchedule }) {
 
         <div className="lg:col-span-5 space-y-6">
           <WeeklyCalendar onSchedule={onSchedule} />
+          <PlatformNews
+            platform="instagram"
+            label="Instagram"
+            onOpenAll={() => setSection('noticias')}
+          />
           <TopReels />
         </div>
       </div>

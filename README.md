@@ -243,14 +243,26 @@ Edita la lista `FEEDS` en el nodo *Fuentes* del workflow `14-noticias-rss`:
 Las URL que vienen de fábrica hay que confirmarlas: cambian con el tiempo y
 algunos medios retiran sus feeds.
 
+Entre las fuentes de fábrica van los **blogs oficiales** de YouTube, LinkedIn y
+Meta: los cambios de producto se anuncian ahí antes de llegar a la prensa.
+
 ### Lo que el workflow deduce, y por qué se dice
 
-Un RSS trae titular, enlace, fecha y poco más. **El tema y la relevancia los
-deduce el workflow** a partir del texto: busca palabras clave para el tema y
-puntúa la relevancia combinando cuántos términos de tu interés aparecen con lo
-reciente que sea la noticia. Ambas listas están al principio del nodo *Fuentes*.
+Un RSS trae titular, enlace, fecha y poco más. **El tema, la plataforma y la
+relevancia los deduce el workflow** a partir del texto: busca palabras clave
+para el tema y para la plataforma, y puntúa la relevancia combinando cuántos
+términos de tu interés aparecen con lo reciente que sea la noticia. Que hable de
+una de tus plataformas es la señal que más pesa. Las tres listas están al
+principio del nodo *Fuentes*.
 
 Es una heurística, no un dato del medio, y el detalle de cada noticia lo dice.
+
+### Las noticias llegan a cada estudio
+
+Cada estudio muestra un bloque **Novedades de la plataforma** con lo que se ha
+publicado sobre ella: un cambio de algoritmo se lee mejor al lado de las
+métricas que acaba moviendo. La sección de Noticias añade además un filtro por
+plataforma, y una misma noticia puede contar para varias.
 
 ### Cuando un feed se cae
 
@@ -278,7 +290,7 @@ salen tantos elementos como fuentes, y la atribución es fiable.
 | `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | `?count=10` |
 | `bitaxus/yt-overview` | GET | Al abrir el estudio de YouTube | `?range=7d\|30d\|90d\|12m` |
 | `bitaxus/yt-videos` | GET | Al abrir el estudio de YouTube | `?count=6` |
-| `bitaxus/news` | GET | Al abrir Noticias | `?limit=12` |
+| `bitaxus/news` | GET | Al abrir Noticias y en cada estudio | `?limit=20` |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -324,10 +336,10 @@ Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vac
 | Sección | Qué hace |
 | --- | --- |
 | **Inicio** | Resumen: KPIs, próximas publicaciones de todas las plataformas, accesos a los estudios y mejor pieza del mes. |
-| **Noticias** | Prensa colombiana e internacional. Las piezas destacadas llevan portada; el resto va en lista compacta. Buscador y filtros por país y por relevancia. Cada titular abre su detalle y permite crear una publicación a partir de él. |
+| **Noticias** | Prensa colombiana e internacional más los blogs oficiales de las plataformas. Las piezas destacadas llevan portada; el resto va en lista compacta. Buscador y filtros por país, plataforma y relevancia. Cada titular abre su detalle y permite crear una publicación a partir de él. |
 | **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
 | **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
-| **YouTube / LinkedIn** | Estudio de cada plataforma: sus KPIs y su propia cola. Con la API conectada añaden lo ya publicado, con imagen y rendimiento real. |
+| **YouTube / LinkedIn** | Estudio de cada plataforma: sus KPIs, sus novedades y su propia cola. Con la API conectada añaden lo ya publicado, con imagen y rendimiento real. |
 | **Instagram** | El estudio completo del diseño: feed 3×3, herramientas, calendario semanal y reels. |
 | **Analíticas** | KPIs por rango y tabla de reels comparada con la media del canal. |
 | **Calendario** | Vista mensual navegable con todas las publicaciones programadas, coloreadas por plataforma. |

@@ -2,6 +2,7 @@ import { platformKpis, platforms } from '../../data/dashboard.js'
 import { formatDayLabel, formatTime, REFERENCE_TODAY, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
 import { EyeIcon, HeartIcon, LinkIcon, PlusIcon, UserPlusIcon, CloseIcon } from '../icons.jsx'
+import PlatformNews from './PlatformNews.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
 
 const iconsById = { eye: EyeIcon, heart: HeartIcon, userPlus: UserPlusIcon, link: LinkIcon }
@@ -57,7 +58,7 @@ function LivePill({ live }) {
 }
 
 export default function PlatformStudio({ id, onSchedule }) {
-  const { posts, removePost, linkedin, youtube } = useDashboard()
+  const { posts, removePost, linkedin, youtube, setSection } = useDashboard()
   const platform = platforms[id]
 
   const live = { linkedin, youtube }[id] ?? null
@@ -141,6 +142,8 @@ export default function PlatformStudio({ id, onSchedule }) {
           )
         })}
       </section>
+
+      <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
 
       {live?.posts && (
         <div className={`${card} p-5 space-y-4`}>

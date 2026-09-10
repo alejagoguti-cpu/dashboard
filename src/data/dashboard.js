@@ -167,46 +167,56 @@ export const platformKpis = {
  * `scope` separa lo local de lo global y `cover` marca las piezas destacadas.
  */
 export const newsItems = [
-  { id: 'n1', source: 'El Espectador', scope: 'co', minutes: 38, topic: 'Negocio', relevance: 'alta',
+  { id: 'n1', source: 'El Espectador', scope: 'co', minutes: 38, topic: 'Negocio', relevance: 'alta', platforms: [],
     cover: media.noticiaColombia,
     title: 'El comercio electrónico colombiano crece un 19% y las marcas mueven presupuesto a creadores',
     summary: 'Las compras en línea aceleran por segundo trimestre seguido y la inversión en creadores de contenido se lleva una porción creciente del gasto en publicidad digital.' },
 
-  { id: 'n2', source: 'TechCrunch', scope: 'intl', minutes: 52, topic: 'Plataformas', relevance: 'alta',
+  { id: 'n2', source: 'TechCrunch', scope: 'intl', minutes: 52, topic: 'Plataformas', relevance: 'alta', platforms: ['instagram'],
     cover: media.noticiaReels,
     title: 'Instagram amplía los Reels a 5 minutos para todas las cuentas',
     summary: 'El cambio llega a cuentas de cualquier tamaño y desplaza el formato hacia piezas más largas, con implicaciones directas para la retención media.' },
 
-  { id: 'n3', source: 'Social Media Today', scope: 'intl', minutes: 96, topic: 'Algoritmo', relevance: 'alta',
+  { id: 'n3', source: 'Social Media Today', scope: 'intl', minutes: 96, topic: 'Algoritmo', relevance: 'alta', platforms: ['instagram'],
     cover: media.noticiaAlgoritmo,
     title: 'El alcance orgánico de los carruseles cae un 12% tras el último ajuste',
     summary: 'Los datos agregados de varias herramientas de analítica coinciden en una caída sostenida desde el cambio del mes pasado.' },
 
-  { id: 'n4', source: 'La República', scope: 'co', minutes: 145, topic: 'Ventas', relevance: 'alta',
+  { id: 'n4', source: 'La República', scope: 'co', minutes: 145, topic: 'Ventas', relevance: 'alta', platforms: [],
     cover: media.noticiaIa,
     title: 'Seis de cada diez agencias B2B en Colombia ya automatizan su prospección',
     summary: 'La automatización de mensajes directos y correos de primer contacto se generaliza entre agencias medianas del país.' },
 
-  { id: 'n5', source: 'El Tiempo', scope: 'co', minutes: 200, topic: 'Regulación', relevance: 'media',
+  { id: 'n5', source: 'El Tiempo', scope: 'co', minutes: 200, topic: 'Regulación', relevance: 'media', platforms: ['instagram'],
     title: 'La SIC endurece las reglas de publicidad encubierta para creadores' },
 
-  { id: 'n6', source: 'The Verge', scope: 'intl', minutes: 240, topic: 'Plataformas', relevance: 'media',
+  { id: 'n6', source: 'The Verge', scope: 'intl', minutes: 240, topic: 'Plataformas', relevance: 'media', platforms: ['linkedin'],
     title: 'LinkedIn prueba un feed de vídeo vertical al estilo TikTok' },
 
-  { id: 'n7', source: 'Reuters', scope: 'intl', minutes: 320, topic: 'Negocio', relevance: 'media',
+  { id: 'n7', source: 'Reuters', scope: 'intl', minutes: 320, topic: 'Negocio', relevance: 'media', platforms: [],
     title: 'La inversión publicitaria en vídeo corto superará a la de televisión en 2027' },
 
-  { id: 'n8', source: 'Semana', scope: 'co', minutes: 420, topic: 'Formatos', relevance: 'media',
+  { id: 'n8', source: 'Semana', scope: 'co', minutes: 420, topic: 'Formatos', relevance: 'media', platforms: ['youtube'],
     title: 'Los pódcast en video se consolidan como el formato de mayor crecimiento en Colombia' },
 
-  { id: 'n9', source: 'Search Engine Land', scope: 'intl', minutes: 500, topic: 'Algoritmo', relevance: 'baja',
+  { id: 'n9', source: 'Search Engine Land', scope: 'intl', minutes: 500, topic: 'Algoritmo', relevance: 'baja', platforms: ['youtube'],
     title: 'YouTube prioriza los Shorts con mayor retención en los primeros tres segundos' },
 
-  { id: 'n10', source: 'Portafolio', scope: 'co', minutes: 610, topic: 'Negocio', relevance: 'baja',
+  { id: 'n10', source: 'Portafolio', scope: 'co', minutes: 610, topic: 'Negocio', relevance: 'baja', platforms: [],
     title: 'Las pymes colombianas destinan el 8% de su presupuesto de marketing a redes' },
 
-  { id: 'n11', source: 'Ad Age', scope: 'intl', minutes: 700, topic: 'Negocio', relevance: 'baja',
+  { id: 'n11', source: 'Ad Age', scope: 'intl', minutes: 700, topic: 'Negocio', relevance: 'baja', platforms: [],
     title: 'Los creadores B2B duplican su ticket medio de patrocinio' },
+
+  { id: 'n12', source: 'Blog de YouTube', scope: 'intl', minutes: 130, topic: 'Plataformas', relevance: 'alta',
+    platforms: ['youtube'],
+    title: 'YouTube Studio estrena informes de retención comparada entre vídeos',
+    summary: 'El panel de creadores permite ahora contrastar la curva de retención de varios vídeos a la vez para encontrar el patrón de los que funcionan.' },
+
+  { id: 'n13', source: 'LinkedIn Blog', scope: 'intl', minutes: 275, topic: 'Plataformas', relevance: 'alta',
+    platforms: ['linkedin'],
+    title: 'LinkedIn abre las analíticas de publicación a las páginas pequeñas',
+    summary: 'Las páginas de empresa por debajo de mil seguidores acceden por primera vez al desglose de impresiones y procedencia de la audiencia.' },
 ]
 
 /** Temas seguidos, con volumen y tendencia (sección Investigación → Temas). */
