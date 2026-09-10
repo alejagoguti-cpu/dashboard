@@ -453,3 +453,71 @@ export const topReels = [
 ]
 
 export const channelAverageRetention = 58
+
+/**
+ * Bandeja de ideas de ejemplo. Es lo que el bot de Telegram devolvería: el
+ * pensamiento tal cual llegó y el texto ya redactado a partir de él.
+ */
+export const telegramIdeas = [
+  {
+    id: 'demo-idea-1',
+    pensamiento: 'la gente no compra por el descuento, compra porque entendió qué pierde si no lo hace',
+    formato: 'instagram',
+    etiqueta: 'Publicación de Instagram',
+    plataforma: 'instagram',
+    titulo: 'Nadie compra por el descuento',
+    texto: [
+      'Nadie compra por el descuento',
+      '',
+      'Compra porque entendió qué se pierde si no lo hace.',
+      'Eso no se resuelve bajando el precio.',
+      'Se resuelve contando el coste de quedarse igual.',
+      '',
+      'Cuéntame cuál es el tuyo y lo desmontamos.',
+      '',
+      '#ventasb2b #agencias #ofertairresistible',
+    ].join('\n'),
+    ia: true,
+    estado: 'lista',
+    recibido: inDays(0, '09:12'),
+  },
+  {
+    id: 'demo-idea-2',
+    pensamiento: 'los reels de 15 segundos rinden más que los de 60',
+    formato: 'youtube',
+    etiqueta: 'Idea de YouTube',
+    plataforma: 'youtube',
+    titulo: 'TÍTULO: 15 segundos ganan a 60. Los datos',
+    texto: [
+      'TÍTULO: 15 segundos ganan a 60. Los datos',
+      'ÁNGULO: el formato corto no es moda, es retención medida.',
+      'GUION:',
+      '- Qué pasa entre el segundo 12 y el 18',
+      '- Los tres cortes que salvan un vídeo largo',
+      '- Cuándo sí conviene irse a 60',
+      'MINIATURA: 15 s gana',
+    ].join('\n'),
+    ia: true,
+    estado: 'lista',
+    recibido: inDays(-1, '18:40'),
+  },
+  {
+    id: 'demo-idea-3',
+    pensamiento: 'el coste de quedarse igual',
+    formato: 'guion',
+    etiqueta: 'Ayuda con el guion',
+    plataforma: 'instagram',
+    titulo: '[0-3 s] GANCHO: llevas un año con el mismo embudo',
+    texto: [
+      '[0-3 s] GANCHO: llevas un año con el mismo embudo.',
+      '[3-30 s] DESARROLLO:',
+      '- Lo que no cambias también tiene precio',
+      '- Ese precio no aparece en ninguna factura',
+      '- Por eso nadie lo discute en la reunión',
+      '[30-45 s] CIERRE: ponle número esta semana y me lo cuentas.',
+    ].join('\n'),
+    ia: true,
+    estado: 'lista',
+    recibido: inDays(-2, '08:05'),
+  },
+]

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "build:demo": "vite build --mode demo --outDir dist-demo",
+    "preview:demo": "vite preview --mode demo --outDir dist-demo --port 4180",
     "n8n:up": "docker compose up -d",
     "n8n:down": "docker compose down",
     "n8n:import": "sh n8n/import.sh",

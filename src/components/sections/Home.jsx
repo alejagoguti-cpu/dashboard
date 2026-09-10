@@ -4,6 +4,7 @@ import { useDashboard } from '../../state/DashboardContext.jsx'
 import KpiCards from '../KpiCards.jsx'
 import { InstagramIcon, LinkedInIcon, PlusIcon, YouTubeIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
+import TelegramInbox from './TelegramInbox.jsx'
 
 const platformIcons = {
   instagram: InstagramIcon,
@@ -35,51 +36,55 @@ export default function Home({ onSchedule }) {
       <KpiCards />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className={`lg:col-span-7 ${card} p-5 space-y-4`}>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">Próximas publicaciones</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {upcoming.length === 0 ? 'No hay nada en cola' : 'En todas las plataformas'}
-            </p>
-          </div>
+        <div className="lg:col-span-7 space-y-6">
+          <TelegramInbox onSchedule={onSchedule} />
 
-          {upcoming.length === 0 ? (
-            <div className="p-6 border border-dashed border-slate-200 rounded-lg text-center">
-              <button
-                type="button"
-                onClick={() => onSchedule({})}
-                className="text-xs font-medium text-slate-700 hover:text-slate-900 transition"
-              >
-                Programar la primera →
-              </button>
+          <div className={`${card} p-5 space-y-4`}>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Próximas publicaciones</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {upcoming.length === 0 ? 'No hay nada en cola' : 'En todas las plataformas'}
+              </p>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {upcoming.map((post) => {
-                const Icon = platformIcons[post.platform] ?? InstagramIcon
 
-                return (
-                  <div
-                    key={post.id}
-                    className="p-3 bg-slate-50/70 border border-slate-100 rounded-lg flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Icon className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <span className="text-xs font-semibold text-slate-900">
-                          {formatDayLabel(post.at)} · {formatTime(post.at)}
-                        </span>
-                        <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{post.title}</p>
+            {upcoming.length === 0 ? (
+              <div className="p-6 border border-dashed border-slate-200 rounded-lg text-center">
+                <button
+                  type="button"
+                  onClick={() => onSchedule({})}
+                  className="text-xs font-medium text-slate-700 hover:text-slate-900 transition"
+                >
+                  Programar la primera →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcoming.map((post) => {
+                  const Icon = platformIcons[post.platform] ?? InstagramIcon
+
+                  return (
+                    <div
+                      key={post.id}
+                      className="p-3 bg-slate-50/70 border border-slate-100 rounded-lg flex items-center justify-between gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Icon className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-xs font-semibold text-slate-900">
+                            {formatDayLabel(post.at)} · {formatTime(post.at)}
+                          </span>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{post.title}</p>
+                        </div>
                       </div>
+                      <span className="text-[11px] font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 flex-shrink-0">
+                        {post.format}
+                      </span>
                     </div>
-                    <span className="text-[11px] font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 flex-shrink-0">
-                      {post.format}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="lg:col-span-5 space-y-6">

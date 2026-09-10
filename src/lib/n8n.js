@@ -45,6 +45,8 @@ export const WEBHOOKS = {
   news: 'bitaxus/news',
   topics: 'bitaxus/topics',
   competitors: 'bitaxus/competitors',
+  ideas: 'bitaxus/ideas',
+  idea: 'bitaxus/idea',
 }
 
 export class N8nError extends Error {

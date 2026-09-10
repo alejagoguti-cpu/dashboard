@@ -54,7 +54,11 @@ export default function usePlatformData({ overview, items, range, itemsLabel = '
 
     const o = overview ? take(a, 'Resumen') : null
     const p = take(b, itemsLabel)
-    const list = p?.posts?.length ? p.posts : p?.items?.length ? p.items : null
+
+    // Una lista vacía no es un fallo: la bandeja de ideas empieza así y un día
+    // flojo de prensa también. Solo se cae al dato de ejemplo cuando la fuente
+    // no ha contestado; si contestó, mandan sus datos aunque no traiga ninguno.
+    const list = Array.isArray(p?.posts) ? p.posts : Array.isArray(p?.items) ? p.items : null
 
     setState({
       status: o || list ? 'ready' : 'error',

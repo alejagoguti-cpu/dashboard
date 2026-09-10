@@ -1,0 +1,612 @@
+{
+  "id": "TgIdeasBitaxus01",
+  "name": "Bitaxus · Ideas por Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        0
+      ],
+      "id": "bx-telegram",
+      "name": "Telegram",
+      "webhookId": "bitaxus-telegram"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Ajustes ──────────────────────────────────────────────────────────────\n// Nada de esto es un secreto: el token del bot va en la credencial de\n// Telegram, no aquí.\nconst AJUSTES = {\n  // Usuario del bot, solo para enseñarlo en el panel. Ej: '@bitaxus_ideas_bot'\n  BOT: 'PON_AQUI_EL_USUARIO_DE_TU_BOT',\n  // Cuántas ideas se guardan. Las más viejas se van cayendo.\n  LIMITE: 40,\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst BOT = env.TELEGRAM_BOT_USERNAME || AJUSTES.BOT;\nconst LIMITE = Number(env.TELEGRAM_LIMITE_IDEAS || AJUSTES.LIMITE);\n\n// El almacén: datos estáticos del workflow. Sobreviven entre ejecuciones y no\n// hacen falta ni base de datos ni fichero. Ojo: dos ejecuciones a la vez leen\n// cada una su copia, así que esto vale para una bandeja personal, no para un\n// equipo escribiendo en paralelo.\nfunction almacen() {\n  const s = $getWorkflowStaticData('global');\n  s.ideas = Array.isArray(s.ideas) ? s.ideas : [];\n  s.chats = Array.isArray(s.chats) ? s.chats : [];\n  if (!s.codigo) s.codigo = nuevoCodigo();\n  return s;\n}\n\nfunction nuevoCodigo() {\n  // Sin vocales ni caracteres que se confundan al dictarlos por voz.\n  const alfabeto = 'BCDFGHJKLMNPQRSTVWXYZ23456789';\n  let c = '';\n  for (let i = 0; i < 6; i++) c += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n  return c;\n}\n\nconst FORMATOS = {\n  instagram: { etiqueta: 'Publicación de Instagram', plataforma: 'instagram' },\n  youtube:   { etiqueta: 'Idea de YouTube',          plataforma: 'youtube'   },\n  guion:     { etiqueta: 'Ayuda con el guion',       plataforma: 'instagram' },\n};\n\n// Órdenes que saltan la pregunta y van directas al formato.\nconst ATAJOS = { '/ig': 'instagram', '/instagram': 'instagram', '/yt': 'youtube',\n                 '/youtube': 'youtube', '/guion': 'guion', '/script': 'guion' };\n\nconst s = almacen();\nconst u = $input.first().json;\n\n// Telegram manda o un mensaje o la pulsación de un botón.\nconst msg = u.message ?? u.channel_post ?? null;\nconst cb = u.callback_query ?? null;\nconst chatId = String(msg?.chat?.id ?? cb?.message?.chat?.id ?? '');\nconst vinculado = s.chats.includes(chatId);\n\nconst base = { chatId, bot: BOT, vinculado, callbackId: cb?.id ?? null };\n\n// ── Botón pulsado: ya sabemos el formato ──────────────────────────────────\nif (cb) {\n  const [, id, formato] = String(cb.data ?? '').split(':');\n  const idea = s.ideas.find((i) => i.id === id);\n  if (!vinculado || !idea || !FORMATOS[formato]) {\n    return [{ json: { ...base, accion: 'avisar',\n      texto: 'Esa idea ya no está en la bandeja. Escríbeme el pensamiento otra vez.' } }];\n  }\n  return [{ json: { ...base, accion: 'redactar', id, formato,\n    etiqueta: FORMATOS[formato].etiqueta, plataforma: FORMATOS[formato].plataforma,\n    pensamiento: idea.pensamiento } }];\n}\n\nconst texto = String(msg?.text ?? '').trim();\nif (!texto) {\n  return [{ json: { ...base, accion: 'avisar',\n    texto: 'De momento solo entiendo texto. Escríbeme el pensamiento y lo convierto.' } }];\n}\n\n// ── Vinculación ───────────────────────────────────────────────────────────\nif (texto.toLowerCase().startsWith('/vincular')) {\n  const codigo = texto.split(/\\s+/)[1]?.toUpperCase() ?? '';\n  if (codigo !== s.codigo) {\n    return [{ json: { ...base, accion: 'avisar',\n      texto: 'Ese código no es el que muestra el panel. Ábrelo en Inicio y cópialo tal cual.' } }];\n  }\n  if (!s.chats.includes(chatId)) s.chats.push(chatId);\n  // Se quema el código: quien lo vio por encima del hombro ya no lo puede usar.\n  s.codigo = nuevoCodigo();\n  return [{ json: { ...base, vinculado: true, accion: 'avisar',\n    texto: 'Listo, ya estamos conectados. Escríbeme cualquier pensamiento y te lo convierto en publicación de Instagram, idea de YouTube o guion.' } }];\n}\n\nif (!vinculado) {\n  return [{ json: { ...base, accion: 'avisar',\n    texto: 'Antes de empezar hay que enlazar este chat con tu panel. Abre Bitaxus en Inicio, copia el código y mándamelo así:\\n\\n/vincular TUCODIGO' } }];\n}\n\nif (texto === '/start' || texto === '/ayuda' || texto === '/help') {\n  return [{ json: { ...base, accion: 'avisar',\n    texto: 'Mándame el pensamiento tal cual te salga y te pregunto en qué lo convierto.\\n\\nSi ya lo sabes, ve directo:\\n/ig  tu pensamiento — pie de Instagram\\n/yt  tu pensamiento — idea de YouTube\\n/guion tu pensamiento — guion de 30-45 s' } }];\n}\n\n// ── Atajo con formato incluido ────────────────────────────────────────────\nconst orden = texto.split(/\\s+/)[0].toLowerCase();\nif (ATAJOS[orden]) {\n  const pensamiento = texto.slice(orden.length).trim();\n  if (!pensamiento) {\n    return [{ json: { ...base, accion: 'avisar',\n      texto: 'Escribe el pensamiento detrás de la orden. Por ejemplo:\\n' + orden + ' los reels de 15 s rinden más que los de 60' } }];\n  }\n  const formato = ATAJOS[orden];\n  const id = 'idea-' + Date.now().toString(36);\n  s.ideas.unshift({ id, pensamiento, recibido: new Date().toISOString(), estado: 'nueva' });\n  s.ideas = s.ideas.slice(0, LIMITE);\n  return [{ json: { ...base, accion: 'redactar', id, formato, pensamiento,\n    etiqueta: FORMATOS[formato].etiqueta, plataforma: FORMATOS[formato].plataforma } }];\n}\n\n// ── Pensamiento suelto: guardarlo y preguntar ─────────────────────────────\nconst id = 'idea-' + Date.now().toString(36);\ns.ideas.unshift({ id, pensamiento: texto, recibido: new Date().toISOString(), estado: 'nueva' });\ns.ideas = s.ideas.slice(0, LIMITE);\n\nreturn [{ json: { ...base, accion: 'preguntar', id, pensamiento: texto } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "bx-entender-mensaje",
+      "name": "Entender mensaje"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.accion }}",
+                    "rightValue": "preguntar"
+                  }
+                ]
+              },
+              "outputKey": "preguntar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.accion }}",
+                    "rightValue": "redactar"
+                  }
+                ]
+              },
+              "outputKey": "redactar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.accion }}",
+                    "rightValue": "avisar"
+                  }
+                ]
+              },
+              "outputKey": "avisar"
+            }
+          ]
+        },
+        "options": {
+          "renameFallbackOutput": "nada",
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -20,
+        0
+      ],
+      "id": "bx-que-toca",
+      "name": "¿Qué toca?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "=Anotado:\n\n_{{ $json.pensamiento }}_\n\n¿En qué lo convierto?",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        },
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Publicación de Instagram",
+                    "additionalFields": {
+                      "callback_data": "=fmt:{{ $json.id }}:instagram"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Idea de YouTube",
+                    "additionalFields": {
+                      "callback_data": "=fmt:{{ $json.id }}:youtube"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Ayuda con el guion",
+                    "additionalFields": {
+                      "callback_data": "=fmt:{{ $json.id }}:guion"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        -180
+      ],
+      "id": "bx-preguntar-formato",
+      "name": "Preguntar formato"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.texto }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        180
+      ],
+      "id": "bx-avisar",
+      "name": "Avisar"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ ({\n  instagram: \"Escribe el pie de una publicación de Instagram:\\n- Primera línea que enganche, de menos de 60 caracteres.\\n- Tres a cinco líneas cortas, separadas por un salto de línea.\\n- Una llamada a la acción concreta.\\n- Tres hashtags al final, en una sola línea.\",\n  youtube: \"Escribe una idea de vídeo para YouTube con estas cuatro partes, cada una en\\nsu línea y con el rótulo delante:\\nTÍTULO: máximo 60 caracteres.\\nÁNGULO: una frase con lo que hace distinto a este vídeo.\\nGUION: tres puntos, uno por línea, empezando por guion.\\nMINIATURA: máximo cuatro palabras.\",\n  guion: \"Escribe un guion de 30 a 45 segundos con los tiempos marcados:\\n[0-3 s] GANCHO: una frase que impida deslizar.\\n[3-30 s] DESARROLLO: tres momentos, uno por línea.\\n[30-45 s] CIERRE: la llamada a la acción.\",\n})[$json.formato] }}\n\nEl pensamiento es:\n{{ $json.pensamiento }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres el asistente de contenidos de Bitaxus, una cuenta que habla de ventas B2B\ny operaciones de agencia. Recibes un pensamiento suelto, dictado a vuelapluma,\ny lo conviertes en material publicable.\n\nReglas:\n- Español de Colombia, natural, sin sonar a traducción del inglés.\n- No prometas nada que el pensamiento no sostenga. Si falta un dato, déjalo\n  marcado como [dato] en vez de inventarlo.\n- Sin emojis, salvo que el pensamiento ya los traiga.\n- Devuelve solo el texto pedido: ni preámbulo, ni comillas, ni explicación."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        0
+      ],
+      "id": "bx-redactar",
+      "name": "Redactar",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "claude-opus-5"
+        },
+        "options": {
+          "maxTokensToSample": 1024
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        300,
+        320
+      ],
+      "id": "bx-modelo-de-lenguaje",
+      "name": "Modelo de lenguaje"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Ajustes ──────────────────────────────────────────────────────────────\n// Nada de esto es un secreto: el token del bot va en la credencial de\n// Telegram, no aquí.\nconst AJUSTES = {\n  // Usuario del bot, solo para enseñarlo en el panel. Ej: '@bitaxus_ideas_bot'\n  BOT: 'PON_AQUI_EL_USUARIO_DE_TU_BOT',\n  // Cuántas ideas se guardan. Las más viejas se van cayendo.\n  LIMITE: 40,\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst BOT = env.TELEGRAM_BOT_USERNAME || AJUSTES.BOT;\nconst LIMITE = Number(env.TELEGRAM_LIMITE_IDEAS || AJUSTES.LIMITE);\n\n// El almacén: datos estáticos del workflow. Sobreviven entre ejecuciones y no\n// hacen falta ni base de datos ni fichero. Ojo: dos ejecuciones a la vez leen\n// cada una su copia, así que esto vale para una bandeja personal, no para un\n// equipo escribiendo en paralelo.\nfunction almacen() {\n  const s = $getWorkflowStaticData('global');\n  s.ideas = Array.isArray(s.ideas) ? s.ideas : [];\n  s.chats = Array.isArray(s.chats) ? s.chats : [];\n  if (!s.codigo) s.codigo = nuevoCodigo();\n  return s;\n}\n\nfunction nuevoCodigo() {\n  // Sin vocales ni caracteres que se confundan al dictarlos por voz.\n  const alfabeto = 'BCDFGHJKLMNPQRSTVWXYZ23456789';\n  let c = '';\n  for (let i = 0; i < 6; i++) c += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n  return c;\n}\n\nconst FORMATOS = {\n  instagram: { etiqueta: 'Publicación de Instagram', plataforma: 'instagram' },\n  youtube:   { etiqueta: 'Idea de YouTube',          plataforma: 'youtube'   },\n  guion:     { etiqueta: 'Ayuda con el guion',       plataforma: 'instagram' },\n};\n\nconst s = almacen();\nconst previo = $('Entender mensaje').first().json;\nconst salida = $input.first().json ?? {};\n\n// La cadena de IA devuelve el texto en `text`; si el nodo falló, viene el error.\nconst generado = String(salida.text ?? salida.output ?? '').trim();\nconst fallo = salida.error ? String(salida.error.message ?? salida.error) : null;\nconst ia = generado.length > 0;\n\n// Sin IA no se inventa una publicación: se devuelve el pensamiento ordenado y\n// se dice que no ha pasado por ningún modelo.\nconst respaldo = [\n  previo.etiqueta + ' · borrador sin IA',\n  '',\n  previo.pensamiento,\n  '',\n  'Conecta un modelo en el nodo «Modelo de lenguaje» del workflow para que esto',\n  'salga ya redactado.',\n].join('\\n');\n\nconst texto = ia ? generado : respaldo;\nconst titulo = texto.split('\\n').map((l) => l.trim()).find((l) => l.length > 0) ?? previo.pensamiento;\n\nconst idea = {\n  id: previo.id,\n  pensamiento: previo.pensamiento,\n  formato: previo.formato,\n  etiqueta: previo.etiqueta,\n  plataforma: previo.plataforma,\n  titulo: titulo.slice(0, 120),\n  texto,\n  ia,\n  fallo,\n  estado: 'lista',\n  recibido: s.ideas.find((i) => i.id === previo.id)?.recibido ?? new Date().toISOString(),\n  redactado: new Date().toISOString(),\n};\n\nconst i = s.ideas.findIndex((x) => x.id === idea.id);\nif (i >= 0) s.ideas[i] = idea; else s.ideas.unshift(idea);\ns.ideas = s.ideas.slice(0, LIMITE);\n\nreturn [{ json: { ...idea, chatId: previo.chatId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        0
+      ],
+      "id": "bx-componer-idea",
+      "name": "Componer idea"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.etiqueta }}\n\n{{ $json.texto }}{{ $json.ia ? \"\" : \"\\n\\n(sin modelo conectado)\" }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        0
+      ],
+      "id": "bx-responder-en-telegram",
+      "name": "Responder en Telegram"
+    },
+    {
+      "parameters": {
+        "path": "bitaxus/ideas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        460
+      ],
+      "id": "bx-panel-leer-ideas",
+      "name": "Panel: leer ideas",
+      "webhookId": "bitaxus-ideas"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Ajustes ──────────────────────────────────────────────────────────────\n// Nada de esto es un secreto: el token del bot va en la credencial de\n// Telegram, no aquí.\nconst AJUSTES = {\n  // Usuario del bot, solo para enseñarlo en el panel. Ej: '@bitaxus_ideas_bot'\n  BOT: 'PON_AQUI_EL_USUARIO_DE_TU_BOT',\n  // Cuántas ideas se guardan. Las más viejas se van cayendo.\n  LIMITE: 40,\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst BOT = env.TELEGRAM_BOT_USERNAME || AJUSTES.BOT;\nconst LIMITE = Number(env.TELEGRAM_LIMITE_IDEAS || AJUSTES.LIMITE);\n\n// El almacén: datos estáticos del workflow. Sobreviven entre ejecuciones y no\n// hacen falta ni base de datos ni fichero. Ojo: dos ejecuciones a la vez leen\n// cada una su copia, así que esto vale para una bandeja personal, no para un\n// equipo escribiendo en paralelo.\nfunction almacen() {\n  const s = $getWorkflowStaticData('global');\n  s.ideas = Array.isArray(s.ideas) ? s.ideas : [];\n  s.chats = Array.isArray(s.chats) ? s.chats : [];\n  if (!s.codigo) s.codigo = nuevoCodigo();\n  return s;\n}\n\nfunction nuevoCodigo() {\n  // Sin vocales ni caracteres que se confundan al dictarlos por voz.\n  const alfabeto = 'BCDFGHJKLMNPQRSTVWXYZ23456789';\n  let c = '';\n  for (let i = 0; i < 6; i++) c += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n  return c;\n}\n\nconst s = almacen();\n\n// El código solo se enseña mientras no haya ningún chat enlazado: una vez\n// dentro, publicarlo en pantalla sería regalar la entrada.\nreturn [{ json: {\n  source: 'telegram',\n  bot: BOT,\n  vinculado: s.chats.length > 0,\n  codigo: s.chats.length > 0 ? null : s.codigo,\n  errors: BOT === 'PON_AQUI_EL_USUARIO_DE_TU_BOT'\n    ? ['Falta poner el usuario del bot en el nodo «Entender mensaje»']\n    : [],\n  items: s.ideas.filter((i) => i.estado !== 'descartada'),\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        460
+      ],
+      "id": "bx-leer-bandeja",
+      "name": "Leer bandeja"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -20,
+        460
+      ],
+      "id": "bx-responder-al-panel",
+      "name": "Responder al panel"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bitaxus/idea",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        680
+      ],
+      "id": "bx-panel-actuar",
+      "name": "Panel: actuar",
+      "webhookId": "bitaxus-idea"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Ajustes ──────────────────────────────────────────────────────────────\n// Nada de esto es un secreto: el token del bot va en la credencial de\n// Telegram, no aquí.\nconst AJUSTES = {\n  // Usuario del bot, solo para enseñarlo en el panel. Ej: '@bitaxus_ideas_bot'\n  BOT: 'PON_AQUI_EL_USUARIO_DE_TU_BOT',\n  // Cuántas ideas se guardan. Las más viejas se van cayendo.\n  LIMITE: 40,\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst BOT = env.TELEGRAM_BOT_USERNAME || AJUSTES.BOT;\nconst LIMITE = Number(env.TELEGRAM_LIMITE_IDEAS || AJUSTES.LIMITE);\n\n// El almacén: datos estáticos del workflow. Sobreviven entre ejecuciones y no\n// hacen falta ni base de datos ni fichero. Ojo: dos ejecuciones a la vez leen\n// cada una su copia, así que esto vale para una bandeja personal, no para un\n// equipo escribiendo en paralelo.\nfunction almacen() {\n  const s = $getWorkflowStaticData('global');\n  s.ideas = Array.isArray(s.ideas) ? s.ideas : [];\n  s.chats = Array.isArray(s.chats) ? s.chats : [];\n  if (!s.codigo) s.codigo = nuevoCodigo();\n  return s;\n}\n\nfunction nuevoCodigo() {\n  // Sin vocales ni caracteres que se confundan al dictarlos por voz.\n  const alfabeto = 'BCDFGHJKLMNPQRSTVWXYZ23456789';\n  let c = '';\n  for (let i = 0; i < 6; i++) c += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n  return c;\n}\n\nconst FORMATOS = {\n  instagram: { etiqueta: 'Publicación de Instagram', plataforma: 'instagram' },\n  youtube:   { etiqueta: 'Idea de YouTube',          plataforma: 'youtube'   },\n  guion:     { etiqueta: 'Ayuda con el guion',       plataforma: 'instagram' },\n};\n\nconst s = almacen();\nconst cuerpo = $input.first().json.body ?? {};\nconst idea = s.ideas.find((i) => i.id === cuerpo.id);\n\nif (!idea) return [{ json: { ok: false, error: 'No encuentro esa idea', accion: 'nada' } }];\n\nif (cuerpo.accion === 'descartar' || cuerpo.accion === 'usada') {\n  idea.estado = cuerpo.accion === 'usada' ? 'usada' : 'descartada';\n  return [{ json: { ok: true, accion: 'nada', item: idea } }];\n}\n\nif (cuerpo.accion === 'reformular') {\n  const formato = FORMATOS[cuerpo.formato] ? cuerpo.formato : idea.formato;\n  return [{ json: { ok: true, accion: 'reformular', id: idea.id,\n    pensamiento: idea.pensamiento, formato,\n    etiqueta: FORMATOS[formato].etiqueta, plataforma: FORMATOS[formato].plataforma,\n    chatId: null } }];\n}\n\nreturn [{ json: { ok: false, error: 'Acción desconocida: ' + cuerpo.accion, accion: 'nada' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        680
+      ],
+      "id": "bx-actuar-sobre-idea",
+      "name": "Actuar sobre idea"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "version": 2,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "p1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.accion }}",
+                    "rightValue": "reformular"
+                  }
+                ]
+              },
+              "outputKey": "reformular"
+            }
+          ]
+        },
+        "options": {
+          "renameFallbackOutput": "no",
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -20,
+        680
+      ],
+      "id": "bx-hay-que-rehacerla",
+      "name": "¿Hay que rehacerla?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ ({\n  instagram: \"Escribe el pie de una publicación de Instagram:\\n- Primera línea que enganche, de menos de 60 caracteres.\\n- Tres a cinco líneas cortas, separadas por un salto de línea.\\n- Una llamada a la acción concreta.\\n- Tres hashtags al final, en una sola línea.\",\n  youtube: \"Escribe una idea de vídeo para YouTube con estas cuatro partes, cada una en\\nsu línea y con el rótulo delante:\\nTÍTULO: máximo 60 caracteres.\\nÁNGULO: una frase con lo que hace distinto a este vídeo.\\nGUION: tres puntos, uno por línea, empezando por guion.\\nMINIATURA: máximo cuatro palabras.\",\n  guion: \"Escribe un guion de 30 a 45 segundos con los tiempos marcados:\\n[0-3 s] GANCHO: una frase que impida deslizar.\\n[3-30 s] DESARROLLO: tres momentos, uno por línea.\\n[30-45 s] CIERRE: la llamada a la acción.\",\n})[$json.formato] }}\n\nEl pensamiento es:\n{{ $json.pensamiento }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres el asistente de contenidos de Bitaxus, una cuenta que habla de ventas B2B\ny operaciones de agencia. Recibes un pensamiento suelto, dictado a vuelapluma,\ny lo conviertes en material publicable.\n\nReglas:\n- Español de Colombia, natural, sin sonar a traducción del inglés.\n- No prometas nada que el pensamiento no sostenga. Si falta un dato, déjalo\n  marcado como [dato] en vez de inventarlo.\n- Sin emojis, salvo que el pensamiento ya los traiga.\n- Devuelve solo el texto pedido: ni preámbulo, ni comillas, ni explicación."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        600
+      ],
+      "id": "bx-rehacer",
+      "name": "Rehacer",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Ajustes ──────────────────────────────────────────────────────────────\n// Nada de esto es un secreto: el token del bot va en la credencial de\n// Telegram, no aquí.\nconst AJUSTES = {\n  // Usuario del bot, solo para enseñarlo en el panel. Ej: '@bitaxus_ideas_bot'\n  BOT: 'PON_AQUI_EL_USUARIO_DE_TU_BOT',\n  // Cuántas ideas se guardan. Las más viejas se van cayendo.\n  LIMITE: 40,\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst BOT = env.TELEGRAM_BOT_USERNAME || AJUSTES.BOT;\nconst LIMITE = Number(env.TELEGRAM_LIMITE_IDEAS || AJUSTES.LIMITE);\n\n// El almacén: datos estáticos del workflow. Sobreviven entre ejecuciones y no\n// hacen falta ni base de datos ni fichero. Ojo: dos ejecuciones a la vez leen\n// cada una su copia, así que esto vale para una bandeja personal, no para un\n// equipo escribiendo en paralelo.\nfunction almacen() {\n  const s = $getWorkflowStaticData('global');\n  s.ideas = Array.isArray(s.ideas) ? s.ideas : [];\n  s.chats = Array.isArray(s.chats) ? s.chats : [];\n  if (!s.codigo) s.codigo = nuevoCodigo();\n  return s;\n}\n\nfunction nuevoCodigo() {\n  // Sin vocales ni caracteres que se confundan al dictarlos por voz.\n  const alfabeto = 'BCDFGHJKLMNPQRSTVWXYZ23456789';\n  let c = '';\n  for (let i = 0; i < 6; i++) c += alfabeto[Math.floor(Math.random() * alfabeto.length)];\n  return c;\n}\n\nconst FORMATOS = {\n  instagram: { etiqueta: 'Publicación de Instagram', plataforma: 'instagram' },\n  youtube:   { etiqueta: 'Idea de YouTube',          plataforma: 'youtube'   },\n  guion:     { etiqueta: 'Ayuda con el guion',       plataforma: 'instagram' },\n};\n\nconst s = almacen();\nconst previo = $('Actuar sobre idea').first().json;\nconst salida = $input.first().json ?? {};\n\n// La cadena de IA devuelve el texto en `text`; si el nodo falló, viene el error.\nconst generado = String(salida.text ?? salida.output ?? '').trim();\nconst fallo = salida.error ? String(salida.error.message ?? salida.error) : null;\nconst ia = generado.length > 0;\n\n// Sin IA no se inventa una publicación: se devuelve el pensamiento ordenado y\n// se dice que no ha pasado por ningún modelo.\nconst respaldo = [\n  previo.etiqueta + ' · borrador sin IA',\n  '',\n  previo.pensamiento,\n  '',\n  'Conecta un modelo en el nodo «Modelo de lenguaje» del workflow para que esto',\n  'salga ya redactado.',\n].join('\\n');\n\nconst texto = ia ? generado : respaldo;\nconst titulo = texto.split('\\n').map((l) => l.trim()).find((l) => l.length > 0) ?? previo.pensamiento;\n\nconst idea = {\n  id: previo.id,\n  pensamiento: previo.pensamiento,\n  formato: previo.formato,\n  etiqueta: previo.etiqueta,\n  plataforma: previo.plataforma,\n  titulo: titulo.slice(0, 120),\n  texto,\n  ia,\n  fallo,\n  estado: 'lista',\n  recibido: s.ideas.find((i) => i.id === previo.id)?.recibido ?? new Date().toISOString(),\n  redactado: new Date().toISOString(),\n};\n\nconst i = s.ideas.findIndex((x) => x.id === idea.id);\nif (i >= 0) s.ideas[i] = idea; else s.ideas.unshift(idea);\ns.ideas = s.ideas.slice(0, LIMITE);\n\nreturn [{ json: { ...idea, chatId: previo.chatId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        600
+      ],
+      "id": "bx-componer-de-nuevo",
+      "name": "Componer de nuevo"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: $json.ok !== false, error: $json.error ?? null, item: $json.item ?? $json }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        680,
+        680
+      ],
+      "id": "bx-responder-al-panel-accion",
+      "name": "Responder al panel (acción)"
+    }
+  ],
+  "connections": {
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Entender mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entender mensaje": {
+      "main": [
+        [
+          {
+            "node": "¿Qué toca?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Qué toca?": {
+      "main": [
+        [
+          {
+            "node": "Preguntar formato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Redactar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Avisar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redactar": {
+      "main": [
+        [
+          {
+            "node": "Componer idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer idea": {
+      "main": [
+        [
+          {
+            "node": "Responder en Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Panel: leer ideas": {
+      "main": [
+        [
+          {
+            "node": "Leer bandeja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer bandeja": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Panel: actuar": {
+      "main": [
+        [
+          {
+            "node": "Actuar sobre idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actuar sobre idea": {
+      "main": [
+        [
+          {
+            "node": "¿Hay que rehacerla?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay que rehacerla?": {
+      "main": [
+        [
+          {
+            "node": "Rehacer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder al panel (acción)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rehacer": {
+      "main": [
+        [
+          {
+            "node": "Componer de nuevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer de nuevo": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel (acción)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Modelo de lenguaje": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Redactar",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Rehacer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

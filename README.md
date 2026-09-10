@@ -329,6 +329,63 @@ Las dos secciones caen a los datos de ejemplo y lo marcan en un distintivo
 botón que vuelve a consultar. Si la consulta va a medias —una cuenta que no
 responde, un feed caído— sigue en ámbar y nombra lo que falló.
 
+## Ideas por Telegram
+
+Le escribes al bot un pensamiento suelto —tal cual te salga, dictado o a
+vuelapluma— y vuelve convertido en **pie de Instagram**, **idea de YouTube** o
+**guion de 30-45 segundos**. Lo que salga aparece en la bandeja del panel de
+Inicio, listo para programar.
+
+### La conversación
+
+Mándale el pensamiento y te pregunta en qué lo conviertes, con un botón por
+formato. Si ya lo sabes, ve directo:
+
+```
+/ig     los reels de 15 s rinden más que los de 60
+/yt     bajar el precio no vence la objeción
+/guion  el coste de quedarse igual
+```
+
+### Enlazar el chat
+
+Un bot de Telegram es público: cualquiera que dé con él puede escribirle. Por
+eso el workflow **solo atiende a los chats enlazados**. El panel enseña un
+código de seis caracteres y tú se lo mandas al bot:
+
+```
+/vincular K3F7QA
+```
+
+El código se quema en cuanto se usa, así que verlo por encima del hombro no
+sirve de nada. A cualquier otro chat el bot le responde que no está enlazado, y
+nada de lo que escriba entra en la bandeja.
+
+### Qué hace el panel con ellas
+
+Cada idea trae el pensamiento original, el texto redactado y su formato. Desde
+la tarjeta puedes **programarla** —el titular llega ya escrito al compositor—,
+**copiarla**, **rehacerla en otro formato** o **descartarla**. Rehacer y
+descartar viajan a n8n: no son solo un cambio en pantalla.
+
+### El modelo
+
+El nodo *Modelo de lenguaje* viene con Claude (`claude-opus-5`), pero es un
+nodo de chat model normal y corriente: cámbialo por el proveedor que uses y el
+resto del workflow no se entera. Sin credencial, la cadena falla en blando y el
+bot devuelve el pensamiento ordenado **diciendo que no ha pasado por ningún
+modelo**, en vez de fingir una publicación.
+
+Las instrucciones de cada formato están en el nodo *Redactar*, en castellano y
+sin rodeos. Es lo primero que conviene ajustar a tu voz.
+
+### Dónde se guardan
+
+En los **datos estáticos del workflow**: ni base de datos ni fichero. Sobreviven
+a los reinicios y se quedan las últimas 40. Es una bandeja personal; dos
+ejecuciones simultáneas leen cada una su copia, así que no vale para un equipo
+escribiendo a la vez.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -349,6 +406,8 @@ responde, un feed caído— sigue en ámbar y nombra lo que falló.
 | `bitaxus/news` | GET | Al abrir Noticias y en cada estudio | `?limit=20` |
 | `bitaxus/topics` | GET | Al abrir Temas | — |
 | `bitaxus/competitors` | GET | Al abrir Competidores | — |
+| `bitaxus/ideas` | GET | Al abrir Inicio | — |
+| `bitaxus/idea` | POST | Al rehacer o descartar una idea | `{ id, accion, formato }` |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -357,10 +416,10 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los dieciséis workflows se importaron, activaron y ejecutaron en una instancia real
+Los diecisiete workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los dieciséis webhooks responden 200 con el cuerpo esperado.
+- Los diecisiete webhooks responden 200 con el cuerpo esperado.
 - Los de Instagram, LinkedIn y YouTube se probaron contra **APIs simuladas** que
   reproducen las respuestas de Meta, LinkedIn y Google: el panel pinta perfil,
   KPIs, feed, reels, publicaciones y vídeos reales. Lo que **no** se ha podido
@@ -444,6 +503,7 @@ src/
 ├── assets/                      Portadas SVG y avatar
 ├── components/
 │   ├── sections/                Una pantalla por entrada de la navegación
+│   │   └── TelegramInbox.jsx    Bandeja de ideas del bot, dentro de Inicio
 │   ├── AccountModals.jsx        Perfil, configuración y cierre de sesión
 │   ├── LoggedOut.jsx            Pantalla tras cerrar sesión
 │   ├── Sidebar.jsx              Navegación y menú de cuenta
@@ -474,6 +534,9 @@ respaldo, siempre señalado.
   y se leen noticias de verdad.
 - **Temas y competidores** funcionan igual: sin `15-temas-rss` y `16-competidores`
   activos muestran cifras de ejemplo y lo avisan en ámbar.
+- **La bandeja de Telegram** también: sin `17-ideas-telegram` enseña tres ideas
+  de muestra. Para verlo así sin tocar nada, `npm run build:demo` compila el
+  panel sin ninguna URL de n8n y `npm run preview:demo` lo sirve.
 - **Los medios no usan sus logos.** Cada uno se identifica con un monograma
   sobre un color derivado de su propio nombre, así que es estable y no hay
   ningún recurso de marca que mantener.
