@@ -78,16 +78,20 @@ function FilterGroup({ options, value, onChange, counts }) {
 }
 
 export default function News({ onSchedule }) {
-  const { notify } = useDashboard()
+  const { notify, news } = useDashboard()
   const [query, setQuery] = useState('')
   const [level, setLevel] = useState('todas')
   const [scope, setScope] = useState('todos')
   const [detail, setDetail] = useState(null)
 
+  // Con el feed RSS conectado mandan las noticias reales; si no, las de ejemplo.
+  const live = news.status === 'ready' && news.posts
+  const items = live ? news.posts : newsItems
+
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
 
-    return newsItems.filter(
+    return items.filter(
       (item) =>
         (level === 'todas' || item.relevance === level) &&
         (scope === 'todos' || item.scope === scope) &&
@@ -96,13 +100,13 @@ export default function News({ onSchedule }) {
           item.source.toLowerCase().includes(needle) ||
           item.topic.toLowerCase().includes(needle)),
     )
-  }, [query, level, scope])
+  }, [items, query, level, scope])
 
   const counts = useMemo(() => {
     const tally = (key) =>
-      newsItems.reduce((acc, item) => ({ ...acc, [item[key]]: (acc[item[key]] ?? 0) + 1 }), {})
+      items.reduce((acc, item) => ({ ...acc, [item[key]]: (acc[item[key]] ?? 0) + 1 }), {})
     return { ...tally('relevance'), ...tally('scope') }
-  }, [])
+  }, [items])
 
   // Las piezas con portada encabezan; el resto va en una lista compacta.
   const featured = visible.filter((item) => item.cover).slice(0, 3)
@@ -116,8 +120,10 @@ export default function News({ onSchedule }) {
         title="Noticias"
         subtitle={
           filtering
-            ? `${visible.length} de ${newsItems.length} titulares`
-            : 'Prensa colombiana e internacional, ordenada por recencia'
+            ? `${visible.length} de ${items.length} titulares`
+            : live
+              ? `${items.length} titulares de tus fuentes RSS`
+              : 'Prensa colombiana e internacional, ordenada por recencia'
         }
       >
         <input
@@ -151,11 +157,39 @@ export default function News({ onSchedule }) {
         />
       </SectionHeader>
 
-      {/* Los titulares son inventados: conviene que nadie los tome por reales. */}
-      <p className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-        Titulares de ejemplo. Conecta tu fuente en n8n para ver noticias reales.
-      </p>
+      {live ? (
+        <button
+          type="button"
+          onClick={news.reload}
+          title={
+            news.warnings.length > 0
+              ? `${news.warnings.join(' · ')} — pulsa para reintentar`
+              : 'Pulsa para volver a leer los feeds'
+          }
+          className={`inline-flex items-center gap-1.5 text-[11px] rounded px-2 py-1 border transition hover:opacity-80 ${
+            news.warnings.length > 0
+              ? 'text-amber-700 bg-amber-50 border-amber-200'
+              : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              news.warnings.length > 0 ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}
+          />
+          {news.warnings.length > 0
+            ? `Feeds RSS con incidencias · ${news.warnings.join(' · ')}`
+            : 'Noticias reales desde tus feeds RSS'}
+        </button>
+      ) : (
+        // Sin feed conectado los titulares son inventados: hay que decirlo.
+        <p className="inline-flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          {news.status === 'loading'
+            ? 'Leyendo tus feeds RSS…'
+            : 'Titulares de ejemplo. Conecta tu fuente en n8n para ver noticias reales.'}
+        </p>
+      )}
 
       {visible.length === 0 && (
         <div className={`${card} p-10 text-center`}>
@@ -320,10 +354,29 @@ export default function News({ onSchedule }) {
               <p className="text-xs text-slate-600 leading-relaxed">{detail.summary}</p>
             )}
 
-            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-2">
-              Titular de ejemplo, no una noticia publicada. Con una fuente conectada en n8n
-              aparecerán aquí el resumen y el enlace originales.
-            </p>
+            {live ? (
+              <>
+                {detail.link && (
+                  <a
+                    href={detail.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-xs font-medium text-slate-700 hover:text-slate-900 transition"
+                  >
+                    Leer en {detail.source} →
+                  </a>
+                )}
+                <p className="text-[11px] text-slate-400">
+                  El tema y la relevancia los deduce el workflow del titular; el medio no los
+                  publica.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-2">
+                Titular de ejemplo, no una noticia publicada. Con una fuente conectada en n8n
+                aparecerán aquí el resumen y el enlace originales.
+              </p>
+            )}
           </div>
         )}
       </Modal>

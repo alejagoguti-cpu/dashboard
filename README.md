@@ -62,7 +62,7 @@ Requiere Docker.
 ```bash
 npm run n8n:up       # levanta n8n en http://localhost:5678
                      # (la primera vez, crea la cuenta de propietario en el navegador)
-npm run n8n:import   # importa los 13 workflows, los activa y reinicia n8n
+npm run n8n:import   # importa los 14 workflows, los activa y reinicia n8n
 cp .env.example .env # ya trae la configuración local por defecto
 npm run dev
 ```
@@ -76,7 +76,7 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 
 ### Puesta en marcha contra tu propia instancia
 
-1. Importa los trece workflows de `n8n/workflows/` y actívalos. Desde el editor:
+1. Importa los catorce workflows de `n8n/workflows/` y actívalos. Desde el editor:
    *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
    sirves el panel (vienen con `http://localhost:5173`).
@@ -227,6 +227,40 @@ Los workflows pueden renombrar un KPI, no solo cambiarle el valor.
 Las tarjetas marcan la duración sobre la miniatura y distinguen **Shorts** de
 vídeos largos por su duración.
 
+## Noticias reales por RSS
+
+El panel de Noticias lee feeds RSS de verdad. Es lo más sencillo de conectar de
+todo el proyecto: **no hace falta ninguna credencial**, solo las URL de los
+medios que quieras seguir.
+
+Edita la lista `FEEDS` en el nodo *Fuentes* del workflow `14-noticias-rss`:
+
+```js
+{ url: 'https://www.elespectador.com/arc/outboundfeeds/rss/', source: 'El Espectador', scope: 'co' }
+```
+
+`scope` (`co` / `intl`) alimenta el filtro Colombia / Internacional del panel.
+Las URL que vienen de fábrica hay que confirmarlas: cambian con el tiempo y
+algunos medios retiran sus feeds.
+
+### Lo que el workflow deduce, y por qué se dice
+
+Un RSS trae titular, enlace, fecha y poco más. **El tema y la relevancia los
+deduce el workflow** a partir del texto: busca palabras clave para el tema y
+puntúa la relevancia combinando cuántos términos de tu interés aparecen con lo
+reciente que sea la noticia. Ambas listas están al principio del nodo *Fuentes*.
+
+Es una heurística, no un dato del medio, y el detalle de cada noticia lo dice.
+
+### Cuando un feed se cae
+
+No pasa nada: los demás siguen, y el panel indica cuál falló. Detrás hay más
+cuidado del que parece. El nodo XML descarta el elemento cuando el cuerpo no es
+XML válido, y al desaparecer del flujo desplaza a los siguientes, con lo que los
+artículos acabarían **firmados por el medio equivocado**. Por eso hay un nodo
+que sustituye cualquier respuesta no válida por un feed vacío: así entran y
+salen tantos elementos como fuentes, y la atribución es fiable.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -244,6 +278,7 @@ vídeos largos por su duración.
 | `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | `?count=10` |
 | `bitaxus/yt-overview` | GET | Al abrir el estudio de YouTube | `?range=7d\|30d\|90d\|12m` |
 | `bitaxus/yt-videos` | GET | Al abrir el estudio de YouTube | `?count=6` |
+| `bitaxus/news` | GET | Al abrir Noticias | `?limit=12` |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -252,10 +287,10 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los trece workflows se importaron, activaron y ejecutaron en una instancia real
+Los catorce workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los trece webhooks responden 200 con el cuerpo esperado.
+- Los catorce webhooks responden 200 con el cuerpo esperado.
 - Los de Instagram, LinkedIn y YouTube se probaron contra **APIs simuladas** que
   reproducen las respuestas de Meta, LinkedIn y Google: el panel pinta perfil,
   KPIs, feed, reels, publicaciones y vídeos reales. Lo que **no** se ha podido
@@ -360,10 +395,11 @@ API real solo requiere sustituir ese módulo.
 
 ## Notas
 
-- **Los titulares son de ejemplo.** Están atribuidos a medios reales porque son
-  los que este panel agregaría, pero no son noticias publicadas: el propio panel
-  lo advierte, en la lista y en el detalle. El aviso desaparecerá cuando haya
-  una fuente conectada.
+- **Los titulares de ejemplo** solo se usan mientras no haya feeds RSS
+  conectados. Están atribuidos a medios reales porque son los que este panel
+  agregaría, pero no son noticias publicadas, y el panel lo advierte en la lista
+  y en el detalle. Con el workflow `14-noticias-rss` activo el aviso desaparece
+  y se leen noticias de verdad.
 - **Los medios no usan sus logos.** Cada uno se identifica con un monograma
   sobre un color derivado de su propio nombre, así que es estable y no hay
   ningún recurso de marca que mantener.

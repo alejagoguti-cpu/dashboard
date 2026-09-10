@@ -48,6 +48,7 @@ export function DashboardProvider({ children }) {
     items: n8n.WEBHOOKS.ytVideos,
     range,
   })
+  const news = usePlatformData({ items: n8n.WEBHOOKS.news })
 
   const [savedSlots, setSavedSlots] = useLocalStorage('bitaxus.feed-slots', initialFeedSlots)
   const [posts, setPosts] = useLocalStorage('bitaxus.scheduled-posts', initialScheduledPosts)
@@ -273,6 +274,7 @@ export function DashboardProvider({ children }) {
       instagram,
       linkedin,
       youtube,
+      news,
     }),
     [
       section,
@@ -302,6 +304,7 @@ export function DashboardProvider({ children }) {
       instagram,
       linkedin,
       youtube,
+      news,
     ],
   )
 

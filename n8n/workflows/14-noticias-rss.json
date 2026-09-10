@@ -1,0 +1,196 @@
+{
+  "name": "Bitaxus · Noticias RSS",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/news",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-news",
+      "name": "Webhook",
+      "webhookId": "bitaxus-news"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Fuentes RSS ──────────────────────────────────────────────────────────\n// Edita esta lista con los medios que quieras seguir. `scope` alimenta el\n// filtro Colombia / Internacional del panel.\n//\n// ⚠ Las URL cambian con el tiempo y algunos medios retiran sus feeds. Si una\n// deja de responder, el panel sigue funcionando con las demás y avisa de cuál\n// ha fallado.\nconst FEEDS = [\n  { url: 'https://www.elespectador.com/arc/outboundfeeds/rss/', source: 'El Espectador', scope: 'co' },\n  { url: 'https://www.eltiempo.com/rss/tecnosfera.xml',         source: 'El Tiempo',      scope: 'co' },\n  { url: 'https://www.larepublica.co/rss/empresas',             source: 'La República',   scope: 'co' },\n  { url: 'https://www.portafolio.co/rss/negocios',              source: 'Portafolio',     scope: 'co' },\n  { url: 'https://techcrunch.com/feed/',                        source: 'TechCrunch',     scope: 'intl' },\n  { url: 'https://www.theverge.com/rss/index.xml',              source: 'The Verge',      scope: 'intl' },\n  { url: 'https://www.socialmediatoday.com/feeds/news/',        source: 'Social Media Today', scope: 'intl' },\n  { url: 'https://searchengineland.com/feed',                   source: 'Search Engine Land', scope: 'intl' },\n];\n\n// Un RSS no trae tema ni relevancia: se deducen del titular. Es una heurística,\n// y el panel la presenta como clasificación automática, no como dato del medio.\nconst TOPICS = {\n  Algoritmo:  ['algoritmo', 'alcance', 'feed', 'ranking', 'posicionamiento'],\n  Plataformas:['instagram', 'tiktok', 'youtube', 'linkedin', 'meta', 'reels', 'shorts', 'threads'],\n  Ventas:     ['ventas', 'prospección', 'leads', 'clientes', 'conversión', 'embudo'],\n  Formatos:   ['vídeo', 'video', 'carrusel', 'pódcast', 'podcast', 'newsletter', 'directo'],\n  Regulación: ['regulación', 'ley', 'sic', 'privacidad', 'datos personales', 'multa'],\n  IA:         ['inteligencia artificial', ' ia ', 'openai', 'modelo', 'automatiza'],\n  Negocio:    ['inversión', 'facturación', 'mercado', 'agencia', 'presupuesto', 'crecimiento'],\n};\n\n// Cuantas más de estas aparezcan, más arriba sale la noticia.\nconst INTERES = ['instagram', 'linkedin', 'youtube', 'tiktok', 'reels', 'shorts',\n                 'creador', 'contenido', 'b2b', 'agencia', 'alcance', 'engagement',\n                 'algoritmo', 'marca', 'redes sociales', 'publicación', 'formato'];\n\nconst LIMIT = Math.min(Number($input.first().json.query?.limit ?? 12), 40);\n\nreturn FEEDS.map((feed) => ({ json: { ...feed, limit: LIMIT, topics: TOPICS, interes: INTERES } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-fuentes",
+      "name": "Fuentes"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 8000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-descargar",
+      "name": "Descargar feeds",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Un feed caído no detiene a los demás; el panel avisa de cuál falló.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// El nodo XML descarta el elemento cuando el cuerpo no es XML válido, y al\n// desaparecer del flujo desplaza a los siguientes: los artículos acabarían\n// firmados por el medio equivocado. Aquí se sustituye cualquier respuesta no\n// válida por un feed vacío, de modo que entran y salen tantos elementos como\n// fuentes y la posición sigue siendo de fiar.\nconst VACIO = '<?xml version=\"1.0\"?><rss version=\"2.0\"><channel></channel></rss>';\n\nreturn $input.all().map((item, i) => {\n  const body = typeof item.json?.data === 'string' ? item.json.data : '';\n  const valido = /<(rss|feed)[\\s>]/i.test(body);\n  return { json: { data: valido ? body : VACIO, indice: i, respondio: valido } };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-sanear",
+      "name": "Sanear respuestas"
+    },
+    {
+      "parameters": {
+        "mode": "xmlToJson",
+        "dataPropertyName": "data",
+        "options": {
+          "explicitArray": false,
+          "mergeAttrs": false
+        }
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        880,
+        0
+      ],
+      "id": "xml-parsear",
+      "name": "Parsear XML",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une lo devuelto por cada feed, lo normaliza y lo ordena.\n//\n// El emparejamiento NO puede ir por índice: un feed caído no produce salida y\n// desplaza todo lo que viene detrás, con lo que los artículos acabarían\n// firmados por el medio equivocado. Se usa pairedItem, que n8n mantiene aunque\n// falten elementos, y el dominio como red de seguridad.\nconst feeds = $('Fuentes').all().map((i) => i.json);\nconst estado = $('Sanear respuestas').all().map((i) => i.json);\nconst parsed = $input.all();\n\nconst vistos = new Set();\nconst items = [];\n\nfunction textOf(v) {\n  if (v == null) return '';\n  if (typeof v === 'string') return v;\n  return v._ ?? v['#text'] ?? '';\n}\n\nparsed.forEach((entry, position) => {\n  const feed = feeds[position];\n  if (!feed) return;\n  if (estado[position]?.respondio) vistos.add(feed.source);\n  const body = entry.json ?? {};\n  const raw = body.rss?.channel?.item ?? body.feed?.entry ?? null;\n  if (!raw) return;\n\n  for (const article of [].concat(raw)) {\n    const title = textOf(article.title).trim();\n    if (!title) continue;\n\n    const link = textOf(article.link) || article.link?.$?.href || article.guid?._ || '';\n    const when = textOf(article.pubDate) || textOf(article.published) || textOf(article.updated);\n    const html = textOf(article.description) || textOf(article['content:encoded']) || textOf(article.summary);\n\n    const summary = html.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ')\n      .replace(/\\s+/g, ' ').trim().slice(0, 240);\n\n    const cover = article.enclosure?.$?.url\n      ?? article['media:content']?.$?.url\n      ?? article['media:thumbnail']?.$?.url\n      ?? (html.match(/<img[^>]+src=[\"']([^\"']+)[\"']/i) ?? [])[1]\n      ?? null;\n\n    const haystack = (title + ' ' + summary).toLowerCase();\n    const topic = Object.entries(feed.topics)\n      .find(([, words]) => words.some((w) => haystack.includes(w)))?.[0] ?? 'Negocio';\n\n    const published = when ? new Date(when) : null;\n    const minutes = published && !Number.isNaN(published.getTime())\n      ? Math.max(1, Math.round((Date.now() - published.getTime()) / 60000))\n      : null;\n\n    // Puntúa por cercanía al tema y por frescura: una noticia de hoy sobre tu\n    // plataforma pesa más que una de ayer sobre el sector en general.\n    const hits = feed.interes.filter((w) => haystack.includes(w)).length;\n    const score = hits + (minutes != null && minutes < 180 ? 2 : minutes != null && minutes < 720 ? 1 : 0);\n    const relevance = score >= 3 ? 'alta' : score >= 2 ? 'media' : 'baja';\n\n    items.push({\n      id: link || `${feed.source}-${title.slice(0, 40)}`,\n      source: feed.source,\n      scope: feed.scope,\n      title: title.slice(0, 160),\n      summary: summary || null,\n      cover,\n      link: link || null,\n      topic,\n      relevance,\n      minutes,\n      score,\n    });\n  }\n});\n\n// Un feed sin salida es un feed que no respondió.\nconst fallos = feeds.map((f) => f.source).filter((s) => !vistos.has(s));\n\nconst orden = { alta: 0, media: 1, baja: 2 };\nitems.sort((a, b) => (orden[a.relevance] - orden[b.relevance]) || ((a.minutes ?? 1e9) - (b.minutes ?? 1e9)));\n\nreturn [{ json: {\n  source: 'rss',\n  errors: fallos.length ? [`Sin respuesta: ${fallos.join(', ')}`] : [],\n  items: items.slice(0, feeds[0]?.limit ?? 12),\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "code-componer-noticias",
+      "name": "Componer noticias"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "respond-news",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fuentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fuentes": {
+      "main": [
+        [
+          {
+            "node": "Descargar feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar feeds": {
+      "main": [
+        [
+          {
+            "node": "Sanear respuestas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanear respuestas": {
+      "main": [
+        [
+          {
+            "node": "Parsear XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear XML": {
+      "main": [
+        [
+          {
+            "node": "Componer noticias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer noticias": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

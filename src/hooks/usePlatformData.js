@@ -26,7 +26,10 @@ export default function usePlatformData({ overview, items, range }) {
     setState((current) => ({ ...current, status: 'loading' }))
 
     const [a, b] = await Promise.allSettled([
-      n8n.callWebhook(overview, { method: 'GET', query: range ? { range } : undefined }),
+      // No todas las fuentes tienen resumen: las noticias son solo una lista.
+      overview
+        ? n8n.callWebhook(overview, { method: 'GET', query: range ? { range } : undefined })
+        : Promise.resolve(null),
       n8n.callWebhook(items, { method: 'GET' }),
     ])
 
@@ -48,9 +51,9 @@ export default function usePlatformData({ overview, items, range }) {
       return value
     }
 
-    const o = take(a, 'Resumen')
+    const o = overview ? take(a, 'Resumen') : null
     const p = take(b, 'Publicaciones')
-    const list = p?.posts?.length ? p.posts : null
+    const list = p?.posts?.length ? p.posts : p?.items?.length ? p.items : null
 
     setState({
       status: o || list ? 'ready' : 'error',
