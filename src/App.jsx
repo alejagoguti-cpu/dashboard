@@ -7,6 +7,7 @@ import KpiCards from './components/KpiCards.jsx'
 import LoggedOut from './components/LoggedOut.jsx'
 import ScheduleModal from './components/ScheduleModal.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import { MenuIcon } from './components/icons.jsx'
 import TopReels from './components/TopReels.jsx'
 import WeeklyCalendar from './components/WeeklyCalendar.jsx'
 import Analytics from './components/sections/Analytics.jsx'
@@ -74,6 +75,7 @@ function Dashboard() {
   // `null` = cerrado; un objeto (aunque sea vacío) abre el diálogo con ese prefill.
   const [draft, setDraft] = useState(null)
   const [accountModal, setAccountModal] = useState(null)
+  const [navOpen, setNavOpen] = useState(false)
 
   const openSchedule = useCallback((prefill = {}) => setDraft(prefill), [])
   const closeSchedule = useCallback(() => setDraft(null), [])
@@ -82,10 +84,24 @@ function Dashboard() {
 
   return (
     <div className="h-full flex bg-[#fbfbfb] text-slate-800 font-sans antialiased overflow-hidden">
-      <Sidebar onAccountAction={setAccountModal} />
+      <Sidebar
+        onAccountAction={setAccountModal}
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+      />
 
-      <main className="flex-1 overflow-y-auto bg-surface-gray">
-        <div className="max-w-[1400px] mx-auto p-7 space-y-6">
+      <main className="flex-1 overflow-y-auto bg-surface-gray min-w-0">
+        <div className="max-w-[1400px] mx-auto p-4 sm:p-7 space-y-6">
+          {/* La barra lateral se oculta en pantallas estrechas. */}
+          <button
+            type="button"
+            onClick={() => setNavOpen(true)}
+            className="lg:hidden flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-xs"
+          >
+            <MenuIcon className="w-4 h-4" />
+            Menú
+          </button>
+
           <Section id={section} onSchedule={openSchedule} />
         </div>
       </main>

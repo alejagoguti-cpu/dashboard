@@ -56,14 +56,17 @@ const userMenu = [
   { id: 'salir', label: 'Cerrar sesión', danger: true },
 ]
 
-function NavLink({ id, label, Icon }) {
+function NavLink({ id, label, Icon, onNavigate }) {
   const { section, setSection } = useDashboard()
   const active = section === id
 
   return (
     <button
       type="button"
-      onClick={() => setSection(id)}
+      onClick={() => {
+        setSection(id)
+        onNavigate?.()
+      }}
       aria-current={active ? 'page' : undefined}
       className={
         active
@@ -134,9 +137,24 @@ function UserMenu({ onAction }) {
   )
 }
 
-export default function Sidebar({ onAccountAction }) {
+export default function Sidebar({ onAccountAction, open, onClose }) {
   return (
-    <aside className="w-64 bg-sidebar flex-shrink-0 flex flex-col justify-between border-r border-sidebar-border select-none h-full z-20">
+    <>
+      {/* En pantallas estrechas la barra se superpone; el fondo la cierra. */}
+      {open && (
+        <button
+          type="button"
+          aria-label="Cerrar navegación"
+          onClick={onClose}
+          className="lg:hidden fixed inset-0 z-30 bg-slate-900/50"
+        />
+      )}
+
+      <aside
+        className={`w-64 bg-sidebar flex-shrink-0 flex flex-col justify-between border-r border-sidebar-border select-none h-full
+          fixed inset-y-0 left-0 z-40 transition-transform lg:static lg:translate-x-0 lg:z-20
+          ${open ? 'translate-x-0' : '-translate-x-full'}`}
+      >
       <div className="flex flex-col flex-1 overflow-y-auto pt-6 px-4">
         <div className="px-3 mb-8">
           <span className="text-white text-base tracking-[0.28em] font-extrabold uppercase">
@@ -154,7 +172,7 @@ export default function Sidebar({ onAccountAction }) {
               )}
               <div className="space-y-1">
                 {group.items.map((item) => (
-                  <NavLink key={item.id} {...item} />
+                  <NavLink key={item.id} {...item} onNavigate={onClose} />
                 ))}
               </div>
             </div>
@@ -162,9 +180,10 @@ export default function Sidebar({ onAccountAction }) {
         </nav>
       </div>
 
-      <div className="p-3 border-t border-sidebar-border">
-        <UserMenu onAction={onAccountAction} />
-      </div>
-    </aside>
+        <div className="p-3 border-t border-sidebar-border">
+          <UserMenu onAction={onAccountAction} />
+        </div>
+      </aside>
+    </>
   )
 }

@@ -5,6 +5,16 @@ KPIs del mes, calendario semanal de publicaciones y ranking de reels.
 
 Construido con **React 19 + Vite 7 + Tailwind CSS 4**.
 
+## Verlo funcionando
+
+No hace falta instalar nada ni tener n8n: el panel arranca con datos de ejemplo.
+
+- **En GitHub Pages.** Activa *Settings → Pages → Source: GitHub Actions* una sola
+  vez y cada push a `main` lo publica en `https://<usuario>.github.io/<repo>/`.
+- **En tu ordenador.** Necesitas Node 22: `npm install && npm run dev`.
+
+n8n e Instagram son opcionales y solo hacen falta para datos reales.
+
 ## Desarrollo
 
 ```bash
