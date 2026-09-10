@@ -7,7 +7,7 @@
  * caducan y dejaban el feed en blanco.
  */
 
-import avatarMarcos from '../assets/avatar-marcos.svg'
+import avatarAlejandra from '../assets/avatar-alejandra.svg'
 import carruseles from '../assets/carruseles.svg'
 import casoEstudio from '../assets/caso-estudio.svg'
 import embudoB2B from '../assets/embudo-b2b.svg'
@@ -23,7 +23,7 @@ import operadorFundador from '../assets/operador-fundador.svg'
 import reflexionBitaxus from '../assets/reflexion-bitaxus.svg'
 
 export const media = {
-  avatar: avatarMarcos,
+  avatar: avatarAlejandra,
   carruseles,
   casoEstudio,
   embudoB2B,
@@ -40,12 +40,12 @@ export const media = {
 }
 
 export const account = {
-  name: 'Marcos Razzetti',
-  handle: '@marcosrazzetti',
+  name: 'Alejandra',
+  handle: '@bitaxus',
   posts: 42,
   followers: '128K',
   avatar: media.avatar,
-  profileUrl: 'https://www.instagram.com/marcosrazzetti/',
+  profileUrl: 'https://www.instagram.com/bitaxus/',
 }
 
 export const dateRanges = [
@@ -138,9 +138,9 @@ export const postFormats = {
 
 /** Metadatos de cada estudio de creación. */
 export const platforms = {
-  instagram: { id: 'instagram', label: 'Instagram', handle: '@marcosrazzetti', audience: '128K seguidores' },
-  youtube: { id: 'youtube', label: 'YouTube', handle: '@marcosrazzetti', audience: '41.2K suscriptores' },
-  linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'in/marcosrazzetti', audience: '23.8K contactos' },
+  instagram: { id: 'instagram', label: 'Instagram', handle: '@bitaxus', audience: '128K seguidores' },
+  youtube: { id: 'youtube', label: 'YouTube', handle: '@bitaxus', audience: '41.2K suscriptores' },
+  linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'company/bitaxus', audience: '23.8K contactos' },
 }
 
 /** KPIs por plataforma para los estudios de YouTube y LinkedIn. */
