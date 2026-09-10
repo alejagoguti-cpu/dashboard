@@ -1,0 +1,132 @@
+{
+  "name": "Bitaxus · Instagram · Feed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/ig-media",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-ig-media",
+      "name": "Webhook",
+      "webhookId": "bitaxus-ig-media"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// Rellena estos valores, o defínelos como variables de entorno de n8n. Ojo: por\n// defecto n8n bloquea $env dentro de los nodos Code\n// (N8N_BLOCK_ENV_ACCESS_IN_NODE); si no la desactivas, se usan los de aquí.\n//\n// IG_USER_ID es el id de tu cuenta de Instagram Business/Creator, no el @usuario:\n//   GET /{page-id}?fields=instagram_business_account\nconst AJUSTES = {\n  IG_USER_ID: 'PON_AQUI_TU_IG_USER_ID',\n  GRAPH_API_VERSION: 'v25.0',\n  GRAPH_API_HOST: 'https://graph.facebook.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst IG_USER_ID = env.IG_USER_ID || AJUSTES.IG_USER_ID;\nconst VERSION = env.GRAPH_API_VERSION || AJUSTES.GRAPH_API_VERSION;\nconst HOST = env.GRAPH_API_HOST || AJUSTES.GRAPH_API_HOST;\n\nif (IG_USER_ID === 'PON_AQUI_TU_IG_USER_ID') {\n  throw new Error('Falta IG_USER_ID: rellénalo en el nodo Configuración o define la variable de entorno.');\n}\n\n// El panel pinta una cuadrícula 3×3; se piden 9 piezas.\nconst LIMIT = Number($input.first().json.query?.limit ?? 9);\n\nreturn [{ json: { igUserId: IG_USER_ID, version: VERSION, host: HOST, limit: LIMIT } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuracion",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.host }}/{{ $json.version }}/{{ $json.igUserId }}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit={{ $json.limit }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-publicaciones",
+      "name": "Publicaciones",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// media_url caduca en Instagram, pero sirve para pintar el feed al momento.\n// Para algo permanente, descarga la imagen y guárdala tú.\nconst res = $('Publicaciones').first().json ?? {};\n\nif (res.error) return [{ json: { source: 'instagram', error: res.error.message, slots: [] } }];\n\nconst FORMAT = { VIDEO: 'reel', CAROUSEL_ALBUM: 'carousel', IMAGE: null };\n\nconst slots = (res.data ?? []).map((m) => ({\n  id: m.id,\n  image: m.media_type === 'VIDEO' ? (m.thumbnail_url ?? m.media_url) : m.media_url,\n  alt: (m.caption ?? 'Publicación de Instagram').slice(0, 80),\n  title: (m.caption ?? '').split('\\n')[0].slice(0, 90) || 'Sin título',\n  format: FORMAT[m.media_type] ?? null,\n  permalink: m.permalink,\n  timestamp: m.timestamp,\n  stats: [`♥ ${m.like_count ?? 0}`, `💬 ${m.comments_count ?? 0}`],\n}));\n\nreturn [{ json: { source: 'instagram', slots } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-shape-ig-media",
+      "name": "Componer resumen"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        0
+      ],
+      "id": "respond-ig-media",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Publicaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publicaciones": {
+      "main": [
+        [
+          {
+            "node": "Componer resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resumen": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,162 @@
+{
+  "name": "Bitaxus · Instagram · Resumen",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/ig-overview",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-ig-overview",
+      "name": "Webhook",
+      "webhookId": "bitaxus-ig-overview"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// Rellena estos valores, o defínelos como variables de entorno de n8n. Ojo: por\n// defecto n8n bloquea $env dentro de los nodos Code\n// (N8N_BLOCK_ENV_ACCESS_IN_NODE); si no la desactivas, se usan los de aquí.\n//\n// IG_USER_ID es el id de tu cuenta de Instagram Business/Creator, no el @usuario:\n//   GET /{page-id}?fields=instagram_business_account\nconst AJUSTES = {\n  IG_USER_ID: 'PON_AQUI_TU_IG_USER_ID',\n  GRAPH_API_VERSION: 'v25.0',\n  GRAPH_API_HOST: 'https://graph.facebook.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst IG_USER_ID = env.IG_USER_ID || AJUSTES.IG_USER_ID;\nconst VERSION = env.GRAPH_API_VERSION || AJUSTES.GRAPH_API_VERSION;\nconst HOST = env.GRAPH_API_HOST || AJUSTES.GRAPH_API_HOST;\n\nif (IG_USER_ID === 'PON_AQUI_TU_IG_USER_ID') {\n  throw new Error('Falta IG_USER_ID: rellénalo en el nodo Configuración o define la variable de entorno.');\n}\n\n// Rango pedido por el panel: 7d | 30d | 90d | 12m\nconst RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90, '12m': 365 };\nconst range = $input.first().json.query?.range ?? '30d';\nconst days = RANGE_DAYS[range] ?? 30;\n\nconst until = Math.floor(Date.now() / 1000);\nconst since = until - days * 86400;\n\n// ⚠ Los nombres de métrica cambian entre versiones de la Graph API. Si alguna\n// deja de existir, Meta devuelve error y el panel mostrará \"—\" en ese KPI.\n// Revísalos contra la versión que uses antes de dar el dato por bueno.\nconst METRICS = ['reach', 'total_interactions', 'follower_count', 'website_clicks'];\n\nreturn [{ json: {\n  igUserId: IG_USER_ID,\n  version: VERSION,\n  host: HOST,\n  range, days, since, until,\n  metrics: METRICS.join(','),\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuracion",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.host }}/{{ $json.version }}/{{ $json.igUserId }}?fields=name,username,followers_count,media_count,profile_picture_url",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-perfil",
+      "name": "Perfil",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuración').first().json.host }}/{{ $('Configuración').first().json.version }}/{{ $('Configuración').first().json.igUserId }}/insights?metric={{ $('Configuración').first().json.metrics }}&metric_type=total_value&period=day&since={{ $('Configuración').first().json.since }}&until={{ $('Configuración').first().json.until }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "http-insights-de-cuenta",
+      "name": "Insights de cuenta",
+      "onError": "continueRegularOutput",
+      "notes": "Si una métrica ya no existe en tu versión de la Graph API, quítala de METRICS.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une el perfil y las métricas en la forma que espera el panel.\nconst cfg = $('Configuración').first().json;\nconst profile = $('Perfil').first().json ?? {};\nconst insights = $('Insights de cuenta').first().json ?? {};\n\n// La Graph API responde { data: [{ name, total_value: { value } }] } y, si algo\n// falla, { error: { message } }. Se tolera cualquiera de las dos.\nconst byName = {};\nfor (const row of insights.data ?? []) {\n  byName[row.name] = row.total_value?.value ?? row.values?.[0]?.value ?? null;\n}\n\nconst reach = byName.reach ?? null;\nconst interactions = byName.total_interactions ?? null;\nconst engagement = reach && interactions ? (interactions / reach) * 100 : null;\n\n// El sandbox de n8n puede no traer ICU completo, así que toLocaleString no\n// agrupa: el separador de miles se pone a mano.\nconst miles = (n) => String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\n\nconst fmt = (n) => (n == null ? null\n  : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M'\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K'\n  : String(n));\n\nconst captions = { '7d': 'vs semana anterior', '30d': 'vs mes anterior',\n                   '90d': 'vs trimestre anterior', '12m': 'vs año anterior' };\n\nreturn [{ json: {\n  source: 'instagram',\n  range: cfg.range,\n  errors: [insights.error?.message, profile.error?.message].filter(Boolean),\n  account: {\n    name: profile.name ?? null,\n    handle: profile.username ? '@' + profile.username : null,\n    followers: fmt(profile.followers_count),\n    posts: profile.media_count ?? null,\n    avatar: profile.profile_picture_url ?? null,\n  },\n  kpis: {\n    alcance: { value: fmt(reach), caption: captions[cfg.range] },\n    engagement: { value: engagement == null ? null : engagement.toFixed(1) + '%', caption: 'interacciones / alcance' },\n    seguidores: { value: byName.follower_count == null ? null : '+' + miles(byName.follower_count), caption: 'en el periodo' },\n    clicks: { value: byName.website_clicks == null ? null : miles(byName.website_clicks), caption: 'clicks en el enlace del perfil' },\n  },\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "code-componer-resumen",
+      "name": "Componer resumen"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "respond-1100",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Perfil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perfil": {
+      "main": [
+        [
+          {
+            "node": "Insights de cuenta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights de cuenta": {
+      "main": [
+        [
+          {
+            "node": "Componer resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resumen": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

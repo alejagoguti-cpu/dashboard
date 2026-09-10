@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { account, dateRanges, platforms } from '../data/dashboard.js'
+import { dateRanges, platforms } from '../data/dashboard.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import Modal from './ui/Modal.jsx'
 
@@ -8,7 +8,7 @@ const field =
 
 /** Diálogos que abre el menú de la cuenta: perfil, configuración y salida. */
 export default function AccountModals({ open, onClose }) {
-  const { range, setRange, posts, slots, notify, setLoggedOut } = useDashboard()
+  const { range, setRange, posts, slots, notify, setLoggedOut, account } = useDashboard()
   const [defaultRange, setDefaultRange] = useState(range)
   const [defaultPlatform, setDefaultPlatform] = useState('instagram')
 

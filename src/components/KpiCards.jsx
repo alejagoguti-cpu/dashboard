@@ -9,11 +9,13 @@ const iconsById = {
 }
 
 export default function KpiCards() {
-  const { kpis } = useDashboard()
+  const { kpis, instagram } = useDashboard()
+  // Con Instagram conectado hay que poder distinguir un KPI real de uno de ejemplo.
+  const showOrigin = instagram.status === 'ready'
 
   return (
     <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-      {kpis.map(({ id, label, value, delta, trend, caption, icon }) => {
+      {kpis.map(({ id, label, value, delta, trend, caption, icon, live }) => {
         const Icon = iconsById[icon]
 
         return (
@@ -22,8 +24,16 @@ export default function KpiCards() {
             className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between"
           >
             <div>
-              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+              <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
                 {label}
+                {showOrigin && !live && (
+                  <span
+                    title="La Graph API no devolvió esta métrica; se muestra el dato de ejemplo"
+                    className="text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 rounded normal-case"
+                  >
+                    demo
+                  </span>
+                )}
               </span>
               <div className="text-xl font-bold text-slate-900 mt-1">{value}</div>
               <span

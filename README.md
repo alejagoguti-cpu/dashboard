@@ -45,7 +45,7 @@ Requiere Docker.
 ```bash
 npm run n8n:up       # levanta n8n en http://localhost:5678
                      # (la primera vez, crea la cuenta de propietario en el navegador)
-npm run n8n:import   # importa los 6 workflows, los activa y reinicia n8n
+npm run n8n:import   # importa los 9 workflows, los activa y reinicia n8n
 cp .env.example .env # ya trae la configuración local por defecto
 npm run dev
 ```
@@ -59,7 +59,7 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 
 ### Puesta en marcha contra tu propia instancia
 
-1. Importa los seis workflows de `n8n/workflows/` y actívalos. Desde el editor:
+1. Importa los nueve workflows de `n8n/workflows/` y actívalos. Desde el editor:
    *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
    sirves el panel (vienen con `http://localhost:5173`).
@@ -69,6 +69,51 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
      y el paso 2 deja de importar.
    - **Producción:** `VITE_N8N_BASE_URL=https://tu-instancia`.
 4. Reinicia el servidor de desarrollo: Vite lee las variables al arrancar.
+
+## Datos reales de Instagram
+
+Con los workflows `07`–`09` activos, el panel deja de usar datos de ejemplo para
+el perfil, los KPIs, el feed y los reels: los pide a la Graph API de Meta a
+través de n8n. La cabecera muestra **Instagram en vivo** y, al pulsarla, vuelve a
+sincronizar.
+
+### Qué necesitas de Meta
+
+1. Una cuenta de Instagram **Business o Creator** vinculada a una página de
+   Facebook.
+2. Una app en [developers.facebook.com](https://developers.facebook.com) con los
+   permisos `instagram_basic`, `instagram_manage_insights`, `pages_show_list` y
+   `pages_read_engagement`.
+3. Un **token de acceso de larga duración**.
+4. El **id de tu cuenta de Instagram** (no el `@usuario`):
+   `GET /{page-id}?fields=instagram_business_account`.
+
+### Cómo se configura
+
+El token vive en n8n, nunca en el navegador:
+
+1. En n8n, crea una credencial **Facebook Graph API** y pega el token.
+2. Abre cada workflow de Instagram y asígnale esa credencial en sus nodos HTTP.
+3. Pon tu `IG_USER_ID` en el nodo *Configuración* de cada uno, o defínelo como
+   variable de entorno. Ojo: n8n **bloquea `$env` dentro de los nodos Code** por
+   defecto (`N8N_BLOCK_ENV_ACCESS_IN_NODE`); el `docker-compose` de este repo ya
+   lo desactiva, y si no, los workflows usan el valor escrito en el nodo.
+4. Activa los tres workflows y reinicia n8n.
+
+### Qué se muestra y qué no
+
+Nada se inventa. Si la Graph API no devuelve una métrica, el KPI conserva su
+cifra de ejemplo y aparece marcado con una etiqueta **demo**; los avisos
+parciales se ven al pasar el cursor por la píldora de Instagram.
+
+Un detalle importante: **la Graph API no expone «retención»**. Con datos en vivo
+el panel muestra en su lugar el *visionado medio* (`ig_reels_avg_watch_time`) y,
+si falta, el *alcance sobre reproducciones*, cada uno con su nombre. La columna
+«retención» solo aparece con los datos de ejemplo.
+
+Los nombres de métrica cambian entre versiones de la Graph API. Están agrupados
+en una constante `METRICS` al principio del nodo *Configuración* de cada
+workflow, para que ajustarlos sea una línea.
 
 ### Webhooks que consume el panel
 
@@ -80,6 +125,9 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 | `bitaxus/dm-flows` | GET | Al abrir *Automatización DMs* | — |
 | `bitaxus/generate-hooks` | POST | Al abrir *Hooks & Copies* o recargar | `{ tool, batch }` |
 | `bitaxus/inspect-hashtags` | POST | Al abrir *Inspector de Hashtags* o recargar | `{ tool, batch }` |
+| `bitaxus/ig-overview` | GET | Al cargar y al cambiar de rango | `?range=7d\|30d\|90d\|12m` |
+| `bitaxus/ig-media` | GET | Al cargar el feed | — |
+| `bitaxus/ig-reels` | GET | Al cargar el ranking de reels | — |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -88,10 +136,17 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los seis workflows se importaron, activaron y ejecutaron en una instancia real
+Los nueve workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los seis webhooks responden 200 con el cuerpo esperado.
+- Los nueve webhooks responden 200 con el cuerpo esperado.
+- Los tres de Instagram se probaron contra una **Graph API simulada** que
+  reproduce las respuestas de Meta: el panel pinta perfil, KPIs, feed y reels
+  reales. Lo que **no** se ha podido verificar es la API de Meta en sí — este
+  entorno no tiene acceso a ella y su documentación está bloqueada, así que los
+  nombres de métrica hay que confirmarlos contra la versión que uses.
+- n8n activa desde una *versión publicada*: importar no basta, hay que publicar
+  y reiniciar. Editar la fila del workflow en la base de datos no surte efecto.
 - El panel dispara los workflows por el proxy de Vite y recibe el `executionId`
   real que devuelve n8n.
 - *Programar publicación* responde al instante y deja la ejecución en estado

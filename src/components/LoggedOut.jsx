@@ -1,9 +1,8 @@
-import { account } from '../data/dashboard.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 
 /** Pantalla tras cerrar sesión. Volver a entrar restaura el estado guardado. */
 export default function LoggedOut() {
-  const { setLoggedOut } = useDashboard()
+  const { setLoggedOut, account } = useDashboard()
 
   return (
     <div className="h-full flex items-center justify-center bg-sidebar px-6">

@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react'
-import { account } from '../data/dashboard.js'
 import useOutsideClick from '../hooks/useOutsideClick.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import {
@@ -79,6 +78,7 @@ function NavLink({ id, label, Icon }) {
 }
 
 function UserMenu({ onAction }) {
+  const { account } = useDashboard()
   const [open, setOpen] = useState(false)
   const container = useRef(null)
   useOutsideClick(container, () => setOpen(false), open)

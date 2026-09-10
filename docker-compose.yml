@@ -18,6 +18,12 @@ services:
       GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Madrid}
       # Debe coincidir con la URL desde la que se llaman los webhooks.
       WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      # Los workflows de Instagram leen su configuración de estas variables; sin
+      # esto, n8n bloquea $$env dentro de los nodos Code.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: 'false'
+      IG_USER_ID: ${IG_USER_ID:-}
+      GRAPH_API_VERSION: ${GRAPH_API_VERSION:-v25.0}
+      GRAPH_API_HOST: ${GRAPH_API_HOST:-https://graph.facebook.com}
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n/workflows:/workflows:ro

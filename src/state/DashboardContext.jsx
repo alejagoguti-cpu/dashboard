@@ -1,11 +1,14 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import useInstagramData from '../hooks/useInstagramData.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import * as n8n from '../lib/n8n.js'
 import {
+  account as demoAccount,
   initialFeedSlots,
   initialScheduledPosts,
   kpiMeta,
   kpiValues,
+  topReels as demoReels,
 } from '../data/dashboard.js'
 
 const DashboardContext = createContext(null)
@@ -32,12 +35,25 @@ export function DashboardProvider({ children }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedDay, setSelectedDay] = useState(null)
 
+  // Datos reales de la cuenta de Instagram, cuando hay workflow que los sirva.
+  const instagram = useInstagramData(range)
+
   const [savedSlots, setSavedSlots] = useLocalStorage('bitaxus.feed-slots', initialFeedSlots)
   const [posts, setPosts] = useLocalStorage('bitaxus.scheduled-posts', initialScheduledPosts)
 
   // Orden de trabajo del feed: se confirma en localStorage con "Guardar Orden".
   const [slots, setSlots] = useState(savedSlots)
   const [dirty, setDirty] = useState(false)
+
+
+  // El feed real de Instagram sustituye al de ejemplo en cuanto llega, salvo que
+  // haya reordenaciones sin guardar que se perderían.
+  const [liveApplied, setLiveApplied] = useState(false)
+  useEffect(() => {
+    if (!instagram.slots || liveApplied || dirty) return
+    setSlots(instagram.slots)
+    setLiveApplied(true)
+  }, [instagram.slots, liveApplied, dirty])
 
   const [toasts, setToasts] = useState([])
   const toastId = useRef(0)
@@ -58,10 +74,47 @@ export function DashboardProvider({ children }) {
     setToasts((current) => current.filter((toast) => toast.id !== id))
   }, [])
 
+  /**
+   * Un KPI real sustituye al de demostración solo si trae valor. Si la Graph API
+   * no devolvió esa métrica, se conserva la cifra de ejemplo y se marca como tal
+   * en vez de mostrar un hueco o, peor, un número inventado como si fuera real.
+   */
   const kpis = useMemo(
-    () => kpiMeta.map((meta) => ({ ...meta, ...kpiValues[range][meta.id] })),
-    [range],
+    () =>
+      kpiMeta.map((meta) => {
+        const demo = { ...meta, ...kpiValues[range][meta.id] }
+        const live = instagram.kpis?.[meta.id]
+
+        if (!live?.value) return { ...demo, live: false }
+
+        return {
+          ...meta,
+          value: live.value,
+          caption: live.caption ?? demo.caption,
+          // La Graph API no da comparativa con el periodo anterior en la misma
+          // llamada, así que no se arrastra el delta del dato de ejemplo.
+          delta: null,
+          live: true,
+        }
+      }),
+    [range, instagram.kpis],
   )
+
+  const account = useMemo(() => {
+    const live = instagram.account
+    if (!live) return demoAccount
+
+    return {
+      ...demoAccount,
+      name: live.name ?? demoAccount.name,
+      handle: live.handle ?? demoAccount.handle,
+      followers: live.followers ?? demoAccount.followers,
+      posts: live.posts ?? demoAccount.posts,
+      avatar: live.avatar ?? demoAccount.avatar,
+    }
+  }, [instagram.account])
+
+  const reels = instagram.reels ?? demoReels
 
   const moveSlot = useCallback((fromId, toId) => {
     if (fromId === toId) return
@@ -204,6 +257,9 @@ export function DashboardProvider({ children }) {
       dismissToast,
       connected,
       busy,
+      account,
+      reels,
+      instagram,
     }),
     [
       section,
@@ -228,6 +284,9 @@ export function DashboardProvider({ children }) {
       dismissToast,
       connected,
       busy,
+      account,
+      reels,
+      instagram,
     ],
   )
 

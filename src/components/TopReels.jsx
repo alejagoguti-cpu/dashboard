@@ -1,8 +1,29 @@
 import { useState } from 'react'
-import { channelAverageRetention, topReels } from '../data/dashboard.js'
+import { channelAverageRetention } from '../data/dashboard.js'
+import { useDashboard } from '../state/DashboardContext.jsx'
 import Modal from './ui/Modal.jsx'
 
+/**
+ * La Graph API no da "retención". Para los reels reales se muestra el tiempo
+ * medio de visionado, que sí es una señal de retención, y si falta se cae al
+ * porcentaje de alcance sobre reproducciones, nombrado como lo que es.
+ */
+function secondaryMetric(reel) {
+  if (reel.source !== 'instagram') {
+    return { label: `${reel.retention}% retención`, bar: reel.retention }
+  }
+  if (reel.avgWatchSeconds != null) {
+    return { label: `${reel.avgWatchSeconds}s de media`, bar: null }
+  }
+  if (reel.reachPct != null) {
+    return { label: `${reel.reachPct}% alcance/vistas`, bar: reel.reachPct }
+  }
+  return { label: 'sin datos de retención', bar: null }
+}
+
 function ReelRow({ reel, rank, onOpen }) {
+  const secondary = secondaryMetric(reel)
+
   return (
     <button
       type="button"
@@ -21,14 +42,16 @@ function ReelRow({ reel, rank, onOpen }) {
           <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
             <span>{reel.views} vistas</span>
             <span>·</span>
-            <span>{reel.retention}% retención</span>
+            <span>{secondary.label}</span>
           </div>
-          <div className="w-24 bg-slate-200 h-1 rounded-full mt-1.5 overflow-hidden">
-            <div
-              className="bg-slate-700 h-full rounded-full"
-              style={{ width: `${reel.retention}%` }}
-            />
-          </div>
+          {secondary.bar != null && (
+            <div className="w-24 bg-slate-200 h-1 rounded-full mt-1.5 overflow-hidden">
+              <div
+                className="bg-slate-700 h-full rounded-full"
+                style={{ width: `${secondary.bar}%` }}
+              />
+            </div>
+          )}
         </div>
       </div>
       <div className="text-right flex-shrink-0">
@@ -40,6 +63,7 @@ function ReelRow({ reel, rank, onOpen }) {
 }
 
 export default function TopReels() {
+  const { reels: topReels } = useDashboard()
   const [limit, setLimit] = useState(3)
   const [detail, setDetail] = useState(null)
   const [analysis, setAnalysis] = useState(false)
@@ -85,7 +109,7 @@ export default function TopReels() {
         open={Boolean(detail)}
         onClose={() => setDetail(null)}
         title={detail?.title}
-        subtitle={detail ? `Reel de ${detail.duration}` : undefined}
+        subtitle={detail?.duration ? `Reel de ${detail.duration}` : 'Métricas del reel'}
       >
         {detail && (
           <div className="flex gap-4">
@@ -97,7 +121,9 @@ export default function TopReels() {
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-xs flex-1">
               {[
                 ['Vistas', detail.views],
-                ['Retención', `${detail.retention}%`],
+                detail.source === 'instagram'
+                  ? ['Visionado medio', detail.avgWatchSeconds != null ? `${detail.avgWatchSeconds}s` : '—']
+                  : ['Retención', `${detail.retention}%`],
                 ['Me gusta', detail.likes],
                 ['Comentarios', detail.comments],
                 ['Compartidos', detail.shares],

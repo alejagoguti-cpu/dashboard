@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react'
-import { account } from '../data/dashboard.js'
 import { formatDayLabel, formatTime } from '../lib/dates.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import Modal from './ui/Modal.jsx'
@@ -120,7 +119,7 @@ function UploadCell({ onFiles }) {
 }
 
 export default function FeedPlanner({ onSchedule }) {
-  const { slots, posts, preview, setPreview, moveSlot, addSlot, removeSlot, dirty, saveOrder, resetOrder, notify, busy } =
+  const { slots, posts, preview, setPreview, moveSlot, addSlot, removeSlot, dirty, saveOrder, resetOrder, notify, busy, account, instagram } =
     useDashboard()
   const saving = busy === 'saveOrder'
 

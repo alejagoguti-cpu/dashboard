@@ -1,0 +1,186 @@
+{
+  "name": "Bitaxus · Instagram · Reels",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/ig-reels",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-ig-reels",
+      "name": "Webhook",
+      "webhookId": "bitaxus-ig-reels"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// Rellena estos valores, o defínelos como variables de entorno de n8n. Ojo: por\n// defecto n8n bloquea $env dentro de los nodos Code\n// (N8N_BLOCK_ENV_ACCESS_IN_NODE); si no la desactivas, se usan los de aquí.\n//\n// IG_USER_ID es el id de tu cuenta de Instagram Business/Creator, no el @usuario:\n//   GET /{page-id}?fields=instagram_business_account\nconst AJUSTES = {\n  IG_USER_ID: 'PON_AQUI_TU_IG_USER_ID',\n  GRAPH_API_VERSION: 'v25.0',\n  GRAPH_API_HOST: 'https://graph.facebook.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst IG_USER_ID = env.IG_USER_ID || AJUSTES.IG_USER_ID;\nconst VERSION = env.GRAPH_API_VERSION || AJUSTES.GRAPH_API_VERSION;\nconst HOST = env.GRAPH_API_HOST || AJUSTES.GRAPH_API_HOST;\n\nif (IG_USER_ID === 'PON_AQUI_TU_IG_USER_ID') {\n  throw new Error('Falta IG_USER_ID: rellénalo en el nodo Configuración o define la variable de entorno.');\n}\n\nconst TOP = Number($input.first().json.query?.top ?? 5);\n\n// ⚠ Métricas por pieza. Cambian entre versiones de la Graph API: si alguna deja\n// de existir Meta devuelve error y ese reel se queda sin ese dato.\nconst MEDIA_METRICS = [\n  'views', 'reach', 'likes', 'comments', 'shares', 'saved',\n  // Tiempo medio de visionado en ms. Es la única señal de retención que da la\n  // API; si tu versión no la sirve, el panel mostrará alcance/vistas.\n  'ig_reels_avg_watch_time',\n];\n\nreturn [{ json: {\n  igUserId: IG_USER_ID, version: VERSION, host: HOST,\n  top: TOP, mediaMetrics: MEDIA_METRICS.join(','),\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuracion",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.host }}/{{ $json.version }}/{{ $json.igUserId }}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp&limit=25",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-publicaciones",
+      "name": "Publicaciones",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un item por reel, para que el siguiente nodo pida sus métricas.\nconst cfg = $('Configuración').first().json;\nconst res = $('Publicaciones').first().json ?? {};\n\nif (res.error) return [{ json: { error: res.error.message } }];\n\n// Solo los vídeos son reels; el resto no tiene métricas de reproducción.\nreturn (res.data ?? [])\n  .filter((m) => m.media_type === 'VIDEO')\n  .slice(0, cfg.top)\n  .map((m) => ({ json: { ...m, ...cfg } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-seleccionar-reels",
+      "name": "Seleccionar reels"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.host }}/{{ $json.version }}/{{ $json.id }}/insights?metric={{ $json.mediaMetrics }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "http-insights-por-reel",
+      "name": "Insights por reel",
+      "onError": "continueRegularOutput",
+      "notes": "Se ejecuta una vez por reel. Si una métrica no existe, ese reel la deja a null.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Empareja cada reel con su respuesta de insights y ordena por reproducciones.\nconst bases = $('Seleccionar reels').all();\nconst stats = $('Insights por reel').all();\n\nconst num = (n) => (typeof n === 'number' ? n : null);\nconst fmt = (n) => (n == null ? null : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n));\n\nconst reels = bases.map((base, i) => {\n  const payload = stats[i]?.json ?? {};\n  const byName = {};\n  for (const row of payload.data ?? []) {\n    byName[row.name] = row.values?.[0]?.value ?? row.total_value?.value ?? null;\n  }\n\n  const views = num(byName.views);\n  const reach = num(byName.reach);\n  const watchMs = num(byName.ig_reels_avg_watch_time);\n\n  return {\n    id: base.json.id,\n    source: 'instagram',\n    title: (base.json.caption ?? '').split('\\n')[0].slice(0, 80) || 'Sin título',\n    image: base.json.thumbnail_url ?? base.json.media_url,\n    permalink: base.json.permalink,\n    views: fmt(views),\n    likes: fmt(num(byName.likes)),\n    comments: fmt(num(byName.comments)),\n    shares: fmt(num(byName.shares)),\n    saves: fmt(num(byName.saved)),\n    // La Graph API no expone retención como tal. Se devuelven las dos señales\n    // que sí da, cada una con su nombre, para no presentar una como la otra.\n    avgWatchSeconds: watchMs == null ? null : Math.round(watchMs / 100) / 10,\n    reachPct: views && reach ? Math.round((reach / views) * 100) : null,\n    error: payload.error?.message ?? null,\n  };\n});\n\nreels.sort((a, b) => (parseFloat(b.views) || 0) - (parseFloat(a.views) || 0));\n\nreturn [{ json: { source: 'instagram', reels } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "code-componer-ranking",
+      "name": "Componer ranking"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "respond-ig-reels",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Publicaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publicaciones": {
+      "main": [
+        [
+          {
+            "node": "Seleccionar reels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seleccionar reels": {
+      "main": [
+        [
+          {
+            "node": "Insights por reel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights por reel": {
+      "main": [
+        [
+          {
+            "node": "Componer ranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer ranking": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -35,6 +35,9 @@ export const WEBHOOKS = {
   dmFlows: 'bitaxus/dm-flows',
   generateHooks: 'bitaxus/generate-hooks',
   inspectHashtags: 'bitaxus/inspect-hashtags',
+  igOverview: 'bitaxus/ig-overview',
+  igMedia: 'bitaxus/ig-media',
+  igReels: 'bitaxus/ig-reels',
 }
 
 export class N8nError extends Error {

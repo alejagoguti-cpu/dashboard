@@ -1,4 +1,4 @@
-import { platforms, topReels } from '../../data/dashboard.js'
+import { platforms } from '../../data/dashboard.js'
 import { REFERENCE_TODAY, formatDayLabel, formatTime, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
 import KpiCards from '../KpiCards.jsx'
@@ -12,14 +12,16 @@ const platformIcons = {
 }
 
 export default function Home({ onSchedule }) {
-  const { posts, setSection, slots } = useDashboard()
+  const { posts, setSection, slots, reels: topReels } = useDashboard()
 
   const upcoming = posts
     .filter((post) => toDate(post.at) >= REFERENCE_TODAY)
     .sort((a, b) => new Date(a.at) - new Date(b.at))
     .slice(0, 4)
 
-  const bestReel = [...topReels].sort((a, b) => b.retention - a.retention)[0]
+  // Con datos reales no hay retención; se ordena por reproducciones.
+  const score = (reel) => reel.retention ?? parseFloat(reel.views) ?? 0
+  const bestReel = [...topReels].sort((a, b) => score(b) - score(a))[0]
 
   return (
     <>
@@ -120,7 +122,9 @@ export default function Home({ onSchedule }) {
               <div className="min-w-0">
                 <p className="text-xs font-medium text-slate-900 line-clamp-2">{bestReel.title}</p>
                 <p className="text-[11px] text-slate-500 mt-0.5">
-                  {bestReel.views} vistas · {bestReel.retention}% retención
+                  {bestReel.views} vistas
+                  {bestReel.retention != null && ` · ${bestReel.retention}% retención`}
+                  {bestReel.avgWatchSeconds != null && ` · ${bestReel.avgWatchSeconds}s de media`}
                 </p>
               </div>
             </div>

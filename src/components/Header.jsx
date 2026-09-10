@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { account, dateRanges } from '../data/dashboard.js'
+import { dateRanges } from '../data/dashboard.js'
 import useOutsideClick from '../hooks/useOutsideClick.js'
 import { useDashboard } from '../state/DashboardContext.jsx'
 import { CalendarIcon, CheckIcon, ChevronDownIcon, PlusIcon } from './icons.jsx'
@@ -53,6 +53,50 @@ function RangePicker() {
   )
 }
 
+function InstagramPill() {
+  const { instagram } = useDashboard()
+
+  if (instagram.status === 'off') return null
+
+  const label = {
+    loading: 'Sincronizando Instagram…',
+    ready: instagram.warnings.length > 0 ? 'Instagram · datos parciales' : 'Instagram en vivo',
+    error: 'Instagram no responde',
+  }[instagram.status]
+
+  const tone = {
+    loading: 'bg-slate-100 text-slate-500 border-slate-200',
+    ready: instagram.warnings.length > 0
+      ? 'bg-amber-50 text-amber-700 border-amber-200'
+      : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    error: 'bg-rose-50 text-rose-700 border-rose-200',
+  }[instagram.status]
+
+  return (
+    <button
+      type="button"
+      onClick={instagram.reload}
+      title={
+        instagram.warnings.length > 0
+          ? `${instagram.warnings.join(' · ')} — pulsa para reintentar`
+          : 'Pulsa para volver a sincronizar'
+      }
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition hover:opacity-80 ${tone}`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${
+          instagram.status === 'ready' && instagram.warnings.length === 0
+            ? 'bg-emerald-500'
+            : instagram.status === 'error'
+              ? 'bg-rose-500'
+              : 'bg-slate-400'
+        }`}
+      />
+      {label}
+    </button>
+  )
+}
+
 function ConnectionPill() {
   const { connected } = useDashboard()
 
@@ -76,6 +120,8 @@ function ConnectionPill() {
 }
 
 export default function Header({ onSchedule }) {
+  const { account } = useDashboard()
+
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200/80 pb-5">
       <div>
@@ -88,6 +134,7 @@ export default function Header({ onSchedule }) {
             {account.handle}
           </span>
           <ConnectionPill />
+          <InstagramPill />
         </div>
         <p className="text-xs text-slate-500 mt-1">
           Planificación visual de feed, simulación estética y programación de publicaciones y reels.
