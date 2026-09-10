@@ -10,7 +10,7 @@ import * as n8n from '../lib/n8n.js'
  * `null` y el estudio usa su dato de ejemplo, señalándolo, en vez de inventar
  * una cifra.
  */
-export default function usePlatformData({ overview, items, range }) {
+export default function usePlatformData({ overview, items, range, itemsLabel = 'Publicaciones' }) {
   const connected = n8n.isConnected()
   const [state, setState] = useState({
     status: connected ? 'loading' : 'off',
@@ -52,7 +52,7 @@ export default function usePlatformData({ overview, items, range }) {
     }
 
     const o = overview ? take(a, 'Resumen') : null
-    const p = take(b, 'Publicaciones')
+    const p = take(b, itemsLabel)
     const list = p?.posts?.length ? p.posts : p?.items?.length ? p.items : null
 
     setState({
@@ -62,7 +62,7 @@ export default function usePlatformData({ overview, items, range }) {
       posts: list,
       warnings,
     })
-  }, [connected, overview, items, range])
+  }, [connected, overview, items, range, itemsLabel])
 
   useEffect(() => {
     load()
