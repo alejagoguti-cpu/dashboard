@@ -9,8 +9,15 @@ Construido con **React 19 + Vite 7 + Tailwind CSS 4**.
 
 No hace falta instalar nada ni tener n8n: el panel arranca con datos de ejemplo.
 
-- **En GitHub Pages.** Activa *Settings → Pages → Source: GitHub Actions* una sola
-  vez y cada push a `main` lo publica en `https://<usuario>.github.io/<repo>/`.
+- **En GitHub Pages.** Activa *Settings → Pages → Source: **GitHub Actions*** una
+  sola vez y cada push a `main` lo publica en `https://<usuario>.github.io/<repo>/`.
+
+  El origen tiene que ser *GitHub Actions*, no *Deploy from a branch*. Con la
+  opción de rama, GitHub sirve la raíz del repositorio con Jekyll: eso publica el
+  `index.html` de desarrollo, que apunta a `/src/main.jsx`, un fichero que no
+  existe compilado. El resultado es una página en blanco con el título correcto.
+  Y no da ningún error: los dos despliegues salen en verde y el de Jekyll,
+  que termina después, pisa al bueno.
 - **En tu ordenador.** Necesitas Node 22: `npm install && npm run dev`.
 
 n8n e Instagram son opcionales y solo hacen falta para datos reales.
