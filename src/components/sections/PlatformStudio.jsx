@@ -12,6 +12,7 @@ const kindLabel = {
   video: 'Vídeo',
   article: 'Artículo',
   text: 'Texto',
+  short: 'Short',
 }
 
 const kindChip =
@@ -56,11 +57,10 @@ function LivePill({ live }) {
 }
 
 export default function PlatformStudio({ id, onSchedule }) {
-  const { posts, removePost, linkedin } = useDashboard()
+  const { posts, removePost, linkedin, youtube } = useDashboard()
   const platform = platforms[id]
 
-  // Solo LinkedIn tiene hoy fuente en vivo entre los estudios secundarios.
-  const live = id === 'linkedin' ? linkedin : null
+  const live = { linkedin, youtube }[id] ?? null
 
   /**
    * Un KPI real sustituye al de ejemplo solo si trae valor; si la API no lo
@@ -69,7 +69,16 @@ export default function PlatformStudio({ id, onSchedule }) {
   const kpis = platformKpis[id].map((kpi) => {
     const value = live?.kpis?.[kpi.id]
     if (!value?.value) return { ...kpi, live: false }
-    return { ...kpi, value: value.value, caption: value.caption ?? kpi.caption, delta: null, live: true }
+    return {
+      ...kpi,
+      // La API puede medir algo distinto de lo que suponía el dato de ejemplo,
+      // así que también puede renombrar el KPI.
+      label: value.label ?? kpi.label,
+      value: value.value,
+      caption: value.caption ?? kpi.caption,
+      delta: null,
+      live: true,
+    }
   })
 
   const showOrigin = live?.status === 'ready'
@@ -152,13 +161,18 @@ export default function PlatformStudio({ id, onSchedule }) {
                 className="group rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition flex flex-col bg-white"
               >
                 {post.image ? (
-                  <div className="aspect-video bg-slate-900 overflow-hidden">
+                  <div className="relative aspect-video bg-slate-900 overflow-hidden">
                     <img
                       src={post.image}
                       alt={post.title}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
+                    {post.duration && (
+                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/70 text-white text-[10px] font-medium tabular-nums">
+                        {post.duration}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   // Muchas publicaciones de LinkedIn son solo texto: en vez de un
@@ -176,12 +190,13 @@ export default function PlatformStudio({ id, onSchedule }) {
                     <span className={kindChip}>{kindLabel[post.kind] ?? 'Publicación'}</span>
                   </div>
 
-                  <dl className="grid grid-cols-3 gap-2 mt-auto pt-2 border-t border-slate-100 text-center">
-                    {[
-                      ['Impresiones', post.impressions],
-                      ['Reacciones', post.likes],
-                      ['Interacción', post.engagement == null ? null : `${post.engagement}%`],
-                    ].map(([label, value]) => (
+                  <dl
+                    className="grid gap-2 mt-auto pt-2 border-t border-slate-100 text-center"
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.min(post.metrics?.length || 1, 3)}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    {(post.metrics ?? []).map(({ label, value }) => (
                       <div key={label}>
                         <dt className="text-[10px] text-slate-400">{label}</dt>
                         <dd className="text-xs font-semibold text-slate-800 tabular-nums">

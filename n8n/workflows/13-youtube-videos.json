@@ -1,0 +1,270 @@
+{
+  "name": "Bitaxus · YouTube · Vídeos",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/yt-videos",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-yt-videos",
+      "name": "Webhook",
+      "webhookId": "bitaxus-yt-videos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// YouTube usa dos APIs distintas, ambas de autoservicio:\n//   · Data API v3        → canal, vídeos y miniaturas\n//   · YouTube Analytics  → vistas, retención y suscriptores del periodo\n//\n// La credencial de YouTube de n8n NO trae por defecto el permiso de analíticas.\n// Activa \"Custom Scopes\" en la credencial y añade:\n//   https://www.googleapis.com/auth/youtube.readonly\n//   https://www.googleapis.com/auth/yt-analytics.readonly\n//\n// El canal se resuelve solo con mine=true: no hay que configurar ningún id.\nconst AJUSTES = {\n  DATA_HOST: 'https://www.googleapis.com',\n  ANALYTICS_HOST: 'https://youtubeanalytics.googleapis.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst DATA_HOST = env.YT_DATA_HOST || AJUSTES.DATA_HOST;\nconst ANALYTICS_HOST = env.YT_ANALYTICS_HOST || AJUSTES.ANALYTICS_HOST;\n\n\nconst COUNT = Math.min(Number($input.first().json.query?.count ?? 6), 50);\n\n// La ventana de analíticas por vídeo cubre su vida útil reciente.\nconst iso = (d) => d.toISOString().slice(0, 10);\nconst endDate = iso(new Date(Date.now() - 86400000));\nconst startDate = iso(new Date(Date.now() - 366 * 86400000));\n\nreturn [{ json: { dataHost: DATA_HOST, analyticsHost: ANALYTICS_HOST, count: COUNT, startDate, endDate } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuración",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.dataHost }}/youtube/v3/channels?part=contentDetails&mine=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-canal",
+      "name": "Canal",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// El canal no lista sus vídeos directamente: hay que pasar por la lista de\n// reproducción de subidas que declara en contentDetails.\nconst cfg = $('Configuración').first().json;\nconst ch = $('Canal').first().json ?? {};\n\nif (ch.error) throw new Error(ch.error.message);\n\nconst uploads = ch.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;\nif (!uploads) throw new Error('El canal no expone su lista de subidas');\n\nreturn [{ json: { ...cfg, uploads } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-recoger-subidas",
+      "name": "Recoger subidas"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.dataHost }}/youtube/v3/playlistItems?part=contentDetails&playlistId={{ $json.uploads }}&maxResults={{ $json.count }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "http-lista-de-subidas",
+      "name": "Lista de subidas",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Se queda con los ids de los vídeos, que es lo que piden las dos llamadas\n// siguientes.\nconst cfg = $('Recoger subidas').first().json;\nconst list = $('Lista de subidas').first().json ?? {};\n\nif (list.error) throw new Error(list.error.message);\n\nconst ids = (list.items ?? [])\n  .map((i) => i.contentDetails?.videoId)\n  .filter(Boolean);\n\nreturn [{ json: { ...cfg, ids, idList: ids.join(',') } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "code-elegir-videos",
+      "name": "Elegir vídeos"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.dataHost }}/youtube/v3/videos?part=snippet,statistics,contentDetails&id={{ $json.idList }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "http-videos",
+      "name": "Vídeos",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Elegir vídeos').first().json.analyticsHost }}/v2/reports?ids=channel%3D%3DMINE&startDate={{ $('Elegir vídeos').first().json.startDate }}&endDate={{ $('Elegir vídeos').first().json.endDate }}&metrics=views,averageViewPercentage&dimensions=video&filters=video%3D%3D{{ $('Elegir vídeos').first().json.ids.join('%2C') }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "id": "http-retencion-por-video",
+      "name": "Retención por vídeo",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Retención real por vídeo. Si falta el permiso de analíticas, las tarjetas la dejan en blanco.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une los vídeos con sus estadísticas públicas y su retención real.\nconst videos = $('Vídeos').first().json ?? {};\nconst an = $('Retención por vídeo').first().json ?? {};\n\nif (videos.error) return [{ json: { source: 'youtube', error: videos.error.message, posts: [] } }];\n\n// Analytics con dimensions=video devuelve una fila por vídeo.\nconst cols = (an.columnHeaders ?? []).map((c) => c.name);\nconst iVideo = cols.indexOf('video');\nconst byVideo = {};\nfor (const row of an.rows ?? []) {\n  if (iVideo === -1) continue;\n  const entry = {};\n  cols.forEach((c, i) => { entry[c] = row[i]; });\n  byVideo[row[iVideo]] = entry;\n}\n\nconst fmt = (n) => (n == null ? null\n  : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M'\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K'\n  : String(n));\n\n// ISO 8601 (PT1H2M3S) a mm:ss o h:mm:ss.\nfunction duration(iso) {\n  const m = /^P(?:(\\d+)D)?T(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?$/.exec(iso ?? '');\n  if (!m) return null;\n  const [, d, h, mi, s] = m.map((x) => (x == null ? 0 : Number(x)));\n  const total = d * 86400 + h * 3600 + mi * 60 + s;\n  const pad = (n) => String(n).padStart(2, '0');\n  return total >= 3600\n    ? `${Math.floor(total / 3600)}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`\n    : `${Math.floor(total / 60)}:${pad(total % 60)}`;\n}\n\nconst posts = (videos.items ?? []).map((v) => {\n  const st = v.statistics ?? {};\n  const th = v.snippet?.thumbnails ?? {};\n  const a = byVideo[v.id] ?? {};\n  const retention = a.averageViewPercentage;\n\n  return {\n    id: v.id,\n    title: (v.snippet?.title ?? 'Sin título').slice(0, 90),\n    excerpt: (v.snippet?.description ?? '').slice(0, 220),\n    // Un Short dura como mucho tres minutos.\n    kind: (v.contentDetails?.duration ?? '').match(/^PT([1-9]\\d?|1[0-7]\\d)S$/) ? 'short' : 'video',\n    image: (th.maxres ?? th.high ?? th.medium ?? th.default)?.url ?? null,\n    duration: duration(v.contentDetails?.duration),\n    permalink: `https://www.youtube.com/watch?v=${v.id}`,\n    publishedAt: v.snippet?.publishedAt ?? null,\n    metrics: [\n      { label: 'Vistas', value: fmt(Number(st.viewCount)) },\n      { label: 'Me gusta', value: fmt(Number(st.likeCount)) },\n      { label: 'Retención', value: retention == null ? null : Number(retention).toFixed(0) + '%' },\n    ],\n  };\n});\n\nreturn [{ json: { source: 'youtube', errors: [an.error?.message].filter(Boolean), posts } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "id": "code-componer-videos",
+      "name": "Componer vídeos"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1980,
+        0
+      ],
+      "id": "respond-yt-videos",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal": {
+      "main": [
+        [
+          {
+            "node": "Recoger subidas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recoger subidas": {
+      "main": [
+        [
+          {
+            "node": "Lista de subidas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista de subidas": {
+      "main": [
+        [
+          {
+            "node": "Elegir vídeos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elegir vídeos": {
+      "main": [
+        [
+          {
+            "node": "Vídeos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vídeos": {
+      "main": [
+        [
+          {
+            "node": "Retención por vídeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retención por vídeo": {
+      "main": [
+        [
+          {
+            "node": "Componer vídeos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer vídeos": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from 'react'
 import * as n8n from '../lib/n8n.js'
 
 /**
- * Trae del workflow de LinkedIn la página, sus KPIs y las publicaciones
- * recientes con métricas.
+ * Trae de n8n los datos reales de una plataforma: su cuenta y KPIs por un lado,
+ * sus publicaciones por otro.
  *
- * A diferencia de Instagram, LinkedIn no expone analíticas de perfiles
- * personales: solo de páginas de empresa, y a través de la Community Management
- * API, sujeta a aprobación en su Partner Program. Sin esos permisos las
- * llamadas fallan y el estudio se queda con los datos de ejemplo, señalados.
+ * Las dos llamadas van en paralelo y fallan por separado: si las estadísticas
+ * se caen, las publicaciones siguen mostrándose. Lo que no llegue se queda en
+ * `null` y el estudio usa su dato de ejemplo, señalándolo, en vez de inventar
+ * una cifra.
  */
-export default function useLinkedInData(range) {
+export default function usePlatformData({ overview, items, range }) {
   const connected = n8n.isConnected()
   const [state, setState] = useState({
     status: connected ? 'loading' : 'off',
@@ -25,9 +25,9 @@ export default function useLinkedInData(range) {
 
     setState((current) => ({ ...current, status: 'loading' }))
 
-    const [overview, posts] = await Promise.allSettled([
-      n8n.callWebhook(n8n.WEBHOOKS.liOverview, { method: 'GET', query: { range } }),
-      n8n.callWebhook(n8n.WEBHOOKS.liPosts, { method: 'GET' }),
+    const [a, b] = await Promise.allSettled([
+      n8n.callWebhook(overview, { method: 'GET', query: range ? { range } : undefined }),
+      n8n.callWebhook(items, { method: 'GET' }),
     ])
 
     const warnings = []
@@ -41,14 +41,15 @@ export default function useLinkedInData(range) {
         warnings.push(`${label}: ${value.error}`)
         return null
       }
+      // El workflow devuelve en `errors` los fallos parciales de la API.
       if (Array.isArray(value?.errors) && value.errors.length > 0) {
         warnings.push(`${label}: ${value.errors.join(' · ')}`)
       }
       return value
     }
 
-    const o = take(overview, 'Resumen')
-    const p = take(posts, 'Publicaciones')
+    const o = take(a, 'Resumen')
+    const p = take(b, 'Publicaciones')
     const list = p?.posts?.length ? p.posts : null
 
     setState({
@@ -58,7 +59,7 @@ export default function useLinkedInData(range) {
       posts: list,
       warnings,
     })
-  }, [connected, range])
+  }, [connected, overview, items, range])
 
   useEffect(() => {
     load()

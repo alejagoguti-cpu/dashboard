@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import useInstagramData from '../hooks/useInstagramData.js'
-import useLinkedInData from '../hooks/useLinkedInData.js'
+import usePlatformData from '../hooks/usePlatformData.js'
 import useLocalStorage from '../hooks/useLocalStorage.js'
 import * as n8n from '../lib/n8n.js'
 import {
@@ -38,7 +38,16 @@ export function DashboardProvider({ children }) {
 
   // Datos reales de la cuenta de Instagram, cuando hay workflow que los sirva.
   const instagram = useInstagramData(range)
-  const linkedin = useLinkedInData(range)
+  const linkedin = usePlatformData({
+    overview: n8n.WEBHOOKS.liOverview,
+    items: n8n.WEBHOOKS.liPosts,
+    range,
+  })
+  const youtube = usePlatformData({
+    overview: n8n.WEBHOOKS.ytOverview,
+    items: n8n.WEBHOOKS.ytVideos,
+    range,
+  })
 
   const [savedSlots, setSavedSlots] = useLocalStorage('bitaxus.feed-slots', initialFeedSlots)
   const [posts, setPosts] = useLocalStorage('bitaxus.scheduled-posts', initialScheduledPosts)
@@ -263,6 +272,7 @@ export function DashboardProvider({ children }) {
       reels,
       instagram,
       linkedin,
+      youtube,
     }),
     [
       section,
@@ -291,6 +301,7 @@ export function DashboardProvider({ children }) {
       reels,
       instagram,
       linkedin,
+      youtube,
     ],
   )
 

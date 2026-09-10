@@ -62,7 +62,7 @@ Requiere Docker.
 ```bash
 npm run n8n:up       # levanta n8n en http://localhost:5678
                      # (la primera vez, crea la cuenta de propietario en el navegador)
-npm run n8n:import   # importa los 11 workflows, los activa y reinicia n8n
+npm run n8n:import   # importa los 13 workflows, los activa y reinicia n8n
 cp .env.example .env # ya trae la configuración local por defecto
 npm run dev
 ```
@@ -76,7 +76,7 @@ nuevo. Sin reiniciar, las llamadas devuelven 404. El script ya lo hace.
 
 ### Puesta en marcha contra tu propia instancia
 
-1. Importa los once workflows de `n8n/workflows/` y actívalos. Desde el editor:
+1. Importa los trece workflows de `n8n/workflows/` y actívalos. Desde el editor:
    *Workflows → Import from File*.
 2. En cada nodo Webhook, ajusta **Allowed Origins (CORS)** al origen desde el que
    sirves el panel (vienen con `http://localhost:5173`).
@@ -180,6 +180,53 @@ en LinkedIn— no dejan un hueco roto: su propia entradilla hace de portada.
 Las URL de descarga que devuelve LinkedIn caducan, así que sirven para pintar el
 panel en el momento, no para guardarlas.
 
+## Datos reales de YouTube
+
+De las tres plataformas, la más sencilla: **sus APIs son de autoservicio** y
+funcionan con un canal personal. No hace falta ni página de empresa ni programa
+de partners.
+
+Usa dos APIs de Google a la vez:
+
+- **Data API v3** → canal, vídeos, miniaturas, duración y estadísticas públicas.
+- **YouTube Analytics** → vistas, retención y suscriptores del periodo.
+
+### Qué necesitas
+
+1. Un proyecto en [Google Cloud Console](https://console.cloud.google.com) con
+   **YouTube Data API v3** y **YouTube Analytics API** habilitadas.
+2. Credenciales OAuth 2.0 (ID de cliente y secreto).
+
+No hay que configurar ningún id de canal: se resuelve solo con `mine=true`.
+
+### Cómo se configura
+
+En n8n, crea una credencial **YouTube OAuth2 API** y —esto es lo que se pasa por
+alto— activa **Custom Scopes**, porque los permisos por defecto no incluyen las
+analíticas. Añade:
+
+```
+https://www.googleapis.com/auth/youtube.readonly
+https://www.googleapis.com/auth/yt-analytics.readonly
+```
+
+Después asigna esa credencial a los nodos HTTP de los dos workflows, actívalos y
+reinicia n8n.
+
+### Lo que YouTube da y las otras no
+
+**Retención real.** Instagram no la expone y hay que conformarse con
+aproximaciones; YouTube devuelve `averageViewPercentage`, tanto del canal como de
+cada vídeo. El estudio la muestra tal cual, sin rodeos.
+
+También sustituye un KPI: el dato de ejemplo hablaba de *clicks en la
+descripción*, que la API no da, así que con datos en vivo ese hueco pasa a
+mostrar el **tiempo de visualización**, que es la métrica que YouTube sí mide.
+Los workflows pueden renombrar un KPI, no solo cambiarle el valor.
+
+Las tarjetas marcan la duración sobre la miniatura y distinguen **Shorts** de
+vídeos largos por su duración.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -195,6 +242,8 @@ panel en el momento, no para guardarlas.
 | `bitaxus/ig-reels` | GET | Al cargar el ranking de reels | — |
 | `bitaxus/li-overview` | GET | Al abrir el estudio de LinkedIn | `?range=7d\|30d\|90d\|12m` |
 | `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | `?count=10` |
+| `bitaxus/yt-overview` | GET | Al abrir el estudio de YouTube | `?range=7d\|30d\|90d\|12m` |
+| `bitaxus/yt-videos` | GET | Al abrir el estudio de YouTube | `?count=6` |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -203,14 +252,14 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los once workflows se importaron, activaron y ejecutaron en una instancia real
+Los trece workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los once webhooks responden 200 con el cuerpo esperado.
-- Los de Instagram y LinkedIn se probaron contra **APIs simuladas** que
-  reproducen las respuestas de Meta y de LinkedIn: el panel pinta perfil, KPIs,
-  feed, reels y publicaciones reales. Lo que **no** se ha podido verificar son
-  las APIs en sí — este entorno no las alcanza y su documentación está
+- Los trece webhooks responden 200 con el cuerpo esperado.
+- Los de Instagram, LinkedIn y YouTube se probaron contra **APIs simuladas** que
+  reproducen las respuestas de Meta, LinkedIn y Google: el panel pinta perfil,
+  KPIs, feed, reels, publicaciones y vídeos reales. Lo que **no** se ha podido
+  verificar son las APIs en sí — este entorno no las alcanza y su documentación está
   bloqueada, así que los nombres de métrica y los endpoints hay que
   confirmarlos contra la versión que uses.
 - n8n activa desde una *versión publicada*: importar no basta, hay que publicar
@@ -243,7 +292,7 @@ Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vac
 | **Noticias** | Titulares del sector con buscador y filtro por relevancia. Cada uno abre su detalle y permite crear una publicación a partir de él. |
 | **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
 | **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
-| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. LinkedIn añade, con la API conectada, las publicaciones reales con su imagen y su rendimiento. |
+| **YouTube / LinkedIn** | Estudio de cada plataforma: sus KPIs y su propia cola. Con la API conectada añaden lo ya publicado, con imagen y rendimiento real. |
 | **Instagram** | El estudio completo del diseño: feed 3×3, herramientas, calendario semanal y reels. |
 | **Analíticas** | KPIs por rango y tabla de reels comparada con la media del canal. |
 | **Calendario** | Vista mensual navegable con todas las publicaciones programadas, coloreadas por plataforma. |

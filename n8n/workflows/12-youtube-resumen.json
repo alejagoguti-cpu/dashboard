@@ -1,0 +1,164 @@
+{
+  "name": "Bitaxus · YouTube · Resumen",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/yt-overview",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-yt-overview",
+      "name": "Webhook",
+      "webhookId": "bitaxus-yt-overview"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Configuración ────────────────────────────────────────────────────────\n// YouTube usa dos APIs distintas, ambas de autoservicio:\n//   · Data API v3        → canal, vídeos y miniaturas\n//   · YouTube Analytics  → vistas, retención y suscriptores del periodo\n//\n// La credencial de YouTube de n8n NO trae por defecto el permiso de analíticas.\n// Activa \"Custom Scopes\" en la credencial y añade:\n//   https://www.googleapis.com/auth/youtube.readonly\n//   https://www.googleapis.com/auth/yt-analytics.readonly\n//\n// El canal se resuelve solo con mine=true: no hay que configurar ningún id.\nconst AJUSTES = {\n  DATA_HOST: 'https://www.googleapis.com',\n  ANALYTICS_HOST: 'https://youtubeanalytics.googleapis.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst DATA_HOST = env.YT_DATA_HOST || AJUSTES.DATA_HOST;\nconst ANALYTICS_HOST = env.YT_ANALYTICS_HOST || AJUSTES.ANALYTICS_HOST;\n\nconst RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90, '12m': 365 };\nconst range = $input.first().json.query?.range ?? '30d';\nconst days = RANGE_DAYS[range] ?? 30;\n\n// La Analytics API espera fechas AAAA-MM-DD, no marcas de tiempo.\nconst iso = (d) => d.toISOString().slice(0, 10);\nconst endDate = iso(new Date(Date.now() - 86400000));   // ayer: hoy aún no está consolidado\nconst startDate = iso(new Date(Date.now() - (days + 1) * 86400000));\n\nreturn [{ json: { dataHost: DATA_HOST, analyticsHost: ANALYTICS_HOST, range, days, startDate, endDate } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-configuración",
+      "name": "Configuración"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.dataHost }}/youtube/v3/channels?part=snippet,statistics,contentDetails&mine=true",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-canal",
+      "name": "Canal",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuración').first().json.analyticsHost }}/v2/reports?ids=channel%3D%3DMINE&startDate={{ $('Configuración').first().json.startDate }}&endDate={{ $('Configuración').first().json.endDate }}&metrics=views,estimatedMinutesWatched,averageViewPercentage,subscribersGained",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "http-analiticas",
+      "name": "Analíticas",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Requiere el permiso yt-analytics.readonly: actívalo en Custom Scopes de la credencial.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Une canal y analíticas en la forma que espera el panel.\nconst cfg = $('Configuración').first().json;\nconst ch = $('Canal').first().json ?? {};\nconst an = $('Analíticas').first().json ?? {};\n\nconst errors = [ch.error?.message, an.error?.message].filter(Boolean);\nconst channel = ch.items?.[0] ?? null;\n\n// La Analytics API devuelve columnHeaders + rows: se indexa por nombre.\nconst cols = (an.columnHeaders ?? []).map((c) => c.name);\nconst row = an.rows?.[0] ?? [];\nconst metric = (name) => {\n  const i = cols.indexOf(name);\n  return i === -1 ? null : row[i];\n};\n\nconst miles = (n) => String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\nconst fmt = (n) => (n == null ? null\n  : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M'\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K'\n  : String(n));\n\nconst views = metric('views');\nconst retention = metric('averageViewPercentage');\nconst gained = metric('subscribersGained');\nconst minutes = metric('estimatedMinutesWatched');\n\nconst captions = { '7d': 'vs semana anterior', '30d': 'vs mes anterior',\n                   '90d': 'vs trimestre anterior', '12m': 'vs año anterior' };\n\nreturn [{ json: {\n  source: 'youtube',\n  range: cfg.range,\n  errors,\n  account: {\n    name: channel?.snippet?.title ?? null,\n    handle: channel?.snippet?.customUrl ?? null,\n    audience: channel?.statistics?.subscriberCount\n      ? miles(Number(channel.statistics.subscriberCount)) + ' suscriptores'\n      : null,\n    uploads: channel?.contentDetails?.relatedPlaylists?.uploads ?? null,\n  },\n  kpis: {\n    vistas: { value: fmt(views), caption: captions[cfg.range] },\n    // A diferencia de Instagram, YouTube sí da retención real.\n    retencion: { value: retention == null ? null : retention.toFixed(1) + '%',\n                 caption: 'del vídeo visto de media' },\n    suscriptores: { value: gained == null ? null : '+' + miles(gained), caption: 'ganados en el periodo' },\n    // El dato de ejemplo hablaba de clicks en la descripción, que la API no da;\n    // se sustituye por el tiempo de visualización, que es la métrica de YouTube.\n    clicks: { label: 'Tiempo de visualización',\n              value: minutes == null ? null : fmt(Math.round(minutes / 60)) + ' h',\n              caption: 'horas vistas en el periodo' },\n  },\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ],
+      "id": "code-componer-resumen",
+      "name": "Componer resumen"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "respond-1100",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Configuración",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuración": {
+      "main": [
+        [
+          {
+            "node": "Canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Canal": {
+      "main": [
+        [
+          {
+            "node": "Analíticas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analíticas": {
+      "main": [
+        [
+          {
+            "node": "Componer resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer resumen": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
