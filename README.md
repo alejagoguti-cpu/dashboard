@@ -166,6 +166,20 @@ se queda con los datos de ejemplo y lo indica con la etiqueta **demo**.
 La cabecera `LinkedIn-Version` es obligatoria y usa formato `AAAAMM`; el valor
 por defecto (`202604`) es el mismo que trae el nodo oficial de n8n.
 
+### Las imágenes de las publicaciones
+
+A diferencia de Instagram, LinkedIn **no devuelve la URL de la imagen dentro de
+la publicación**: devuelve un URN (`urn:li:image:…`) que hay que resolver aparte.
+El workflow recoge los de todas las publicaciones y los pide en una sola llamada
+por lotes a `/rest/images` y `/rest/videos`, y reparte el resultado.
+
+De ahí salen los cuatro tipos que muestra el estudio: imagen, carrusel (primera
+imagen), vídeo (su miniatura) y texto. Las publicaciones sin media —la mayoría
+en LinkedIn— no dejan un hueco roto: su propia entradilla hace de portada.
+
+Las URL de descarga que devuelve LinkedIn caducan, así que sirven para pintar el
+panel en el momento, no para guardarlas.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -180,7 +194,7 @@ por defecto (`202604`) es el mismo que trae el nodo oficial de n8n.
 | `bitaxus/ig-media` | GET | Al cargar el feed | — |
 | `bitaxus/ig-reels` | GET | Al cargar el ranking de reels | — |
 | `bitaxus/li-overview` | GET | Al abrir el estudio de LinkedIn | `?range=7d\|30d\|90d\|12m` |
-| `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | — |
+| `bitaxus/li-posts` | GET | Al abrir el estudio de LinkedIn | `?count=10` |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -229,7 +243,7 @@ Las diez entradas de la navegación tienen pantalla propia; no queda ninguna vac
 | **Noticias** | Titulares del sector con buscador y filtro por relevancia. Cada uno abre su detalle y permite crear una publicación a partir de él. |
 | **Temas** | Tabla ordenable de volumen y tendencia. Pulsar una fila abre el diálogo de programación con el tema como título. |
 | **Formatos** | Comparativa de Reel, Carrusel, Imagen y Story por alcance, engagement y retención. |
-| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. LinkedIn añade, con la API conectada, el rendimiento real de lo ya publicado. |
+| **YouTube / LinkedIn** | Estudio reducido de cada plataforma: sus KPIs y su propia cola de publicación. LinkedIn añade, con la API conectada, las publicaciones reales con su imagen y su rendimiento. |
 | **Instagram** | El estudio completo del diseño: feed 3×3, herramientas, calendario semanal y reels. |
 | **Analíticas** | KPIs por rango y tabla de reels comparada con la media del canal. |
 | **Calendario** | Vista mensual navegable con todas las publicaciones programadas, coloreadas por plataforma. |
