@@ -273,6 +273,62 @@ artículos acabarían **firmados por el medio equivocado**. Por eso hay un nodo
 que sustituye cualquier respuesta no válida por un feed vacío: así entran y
 salen tantos elementos como fuentes, y la atribución es fiable.
 
+## Temas y competidores con datos reales
+
+Las dos tablas que quedaban con cifras inventadas ya salen de fuentes reales.
+
+### Temas: qué se está publicando, medido
+
+`15-temas-rss` reutiliza el mismo corpus RSS del panel de Noticias y cuenta
+**cuántos artículos tocan cada tema** en una ventana de 24 horas, comparándola
+con las 24 anteriores. No es volumen de búsqueda ni interés en Google: es
+cobertura de prensa, y el panel lo dice en la propia tabla para que nadie lo
+lea como otra cosa. Con datos reales la columna deja de llamarse *Volumen
+mensual* y pasa a *Noticias*.
+
+Cada fila trae además el titular de muestra que la disparó, con su medio, los
+estudios a los que afecta y cuántas piezas **tuyas** tocan ese tema, contadas
+sobre tu calendario y tu feed, no sobre la API.
+
+Cuando un tema no aparecía en la ventana anterior no hay con qué comparar, así
+que la tendencia sale como `—` en vez de un `+100%` inventado. Un tema con la
+misma cobertura en las dos ventanas sí muestra `+0%`: son cosas distintas.
+
+Los temas se editan en el nodo *Fuentes* del workflow, con las palabras clave
+que cuentan para cada uno.
+
+### Competidores: solo lo que es público
+
+`16-competidores` consulta las cuentas que sigas y **no necesita que te den
+acceso a ellas**:
+
+- **Instagram**, con [Business Discovery][bd] sobre tu propio usuario:
+  `business_discovery.username(handle){followers_count,media_count,media.limit(12){...}}`.
+  Exige que la otra cuenta sea Business o Creator; una cuenta personal no
+  devuelve nada y el panel lo avisa.
+- **YouTube**, con `channels?part=snippet,statistics&forHandle=@cuenta`, que es
+  público y solo pide la clave de API.
+
+[bd]: https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/business_discovery
+
+La cadencia sale de las fechas de las últimas doce publicaciones. La interacción
+se calcula **sobre seguidores**, no sobre impresiones: el alcance de una cuenta
+ajena no es público. Es un número comparable entre competidores, pero no
+coincidirá con el que ellos vean en su propio panel, y la tabla lo advierte.
+YouTube no publica *likes* por canal, así que en su lugar va **vistas por
+vídeo** y la columna de interacción queda con guion.
+
+Las cuentas a seguir se listan en el nodo *Cuentas*. Añadir una desde el panel
+la agrega a la tabla al momento, pero para que se consulte de verdad hay que
+darla de alta también ahí; el aviso al añadirla lo recuerda.
+
+### Cuando no hay workflow
+
+Las dos secciones caen a los datos de ejemplo y lo marcan en un distintivo
+ámbar. Con el workflow activo el distintivo pasa a verde y se convierte en un
+botón que vuelve a consultar. Si la consulta va a medias —una cuenta que no
+responde, un feed caído— sigue en ámbar y nombra lo que falló.
+
 ### Webhooks que consume el panel
 
 | Ruta | Método | Cuándo se llama | Cuerpo |
@@ -291,6 +347,8 @@ salen tantos elementos como fuentes, y la atribución es fiable.
 | `bitaxus/yt-overview` | GET | Al abrir el estudio de YouTube | `?range=7d\|30d\|90d\|12m` |
 | `bitaxus/yt-videos` | GET | Al abrir el estudio de YouTube | `?count=6` |
 | `bitaxus/news` | GET | Al abrir Noticias y en cada estudio | `?limit=20` |
+| `bitaxus/topics` | GET | Al abrir Temas | — |
+| `bitaxus/competitors` | GET | Al abrir Competidores | — |
 
 `schedule-post` recibe también `platform` y puede devolver `{ executionId }`, que
 el panel guarda junto a la publicación. Las tres herramientas aceptan
@@ -299,10 +357,10 @@ el panel guarda junto a la publicación. Las tres herramientas aceptan
 
 ### Verificado contra n8n real
 
-Los catorce workflows se importaron, activaron y ejecutaron en una instancia real
+Los dieciséis workflows se importaron, activaron y ejecutaron en una instancia real
 de n8n (2.35.7). Comprobado de punta a punta:
 
-- Los catorce webhooks responden 200 con el cuerpo esperado.
+- Los dieciséis webhooks responden 200 con el cuerpo esperado.
 - Los de Instagram, LinkedIn y YouTube se probaron contra **APIs simuladas** que
   reproducen las respuestas de Meta, LinkedIn y Google: el panel pinta perfil,
   KPIs, feed, reels, publicaciones y vídeos reales. Lo que **no** se ha podido
@@ -378,6 +436,7 @@ src/
 ├── state/DashboardContext.jsx   Estado compartido: sección, rango, feed, programación, avisos
 ├── hooks/
 │   ├── useLocalStorage.js       Estado persistido, con degradación a memoria
+│   ├── usePlatformData.js       Carga desde n8n: resumen y lista, fallando por separado
 │   └── useOutsideClick.js       Cierre por clic fuera y Escape
 ├── lib/
 │   ├── dates.js                 Semana, etiquetas relativas y conversión de inputs
@@ -402,8 +461,9 @@ src/
 n8n/workflows/                   Workflows listos para importar en tu instancia
 ```
 
-Toda la interfaz se alimenta de `src/data/dashboard.js`, así que conectarla a una
-API real solo requiere sustituir ese módulo.
+Sin workflows conectados toda la interfaz se alimenta de `src/data/dashboard.js`.
+Con ellos activos cada sección prefiere el dato real y deja el de ejemplo como
+respaldo, siempre señalado.
 
 ## Notas
 
@@ -412,6 +472,8 @@ API real solo requiere sustituir ese módulo.
   agregaría, pero no son noticias publicadas, y el panel lo advierte en la lista
   y en el detalle. Con el workflow `14-noticias-rss` activo el aviso desaparece
   y se leen noticias de verdad.
+- **Temas y competidores** funcionan igual: sin `15-temas-rss` y `16-competidores`
+  activos muestran cifras de ejemplo y lo avisan en ámbar.
 - **Los medios no usan sus logos.** Cada uno se identifica con un monograma
   sobre un color derivado de su propio nombre, así que es estable y no hay
   ningún recurso de marca que mantener.

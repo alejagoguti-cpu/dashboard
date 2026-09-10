@@ -4,6 +4,8 @@ import { card } from './SectionHeader.jsx'
 /**
  * Tabla ordenable. Cada columna declara `key`, `label`, opcionalmente `align`,
  * `render` y `sortValue` (para ordenar por algo distinto de lo que se muestra).
+ * Con `sortable: false` la cabecera va como texto: una columna de acciones sin
+ * título no debe ofrecer un botón de ordenar sin nombre accesible.
  */
 export default function SortableTable({ columns, rows, initialSort, onRowClick, empty }) {
   const [sort, setSort] = useState(initialSort ?? { key: columns[0].key, dir: 'asc' })
@@ -46,16 +48,20 @@ export default function SortableTable({ columns, rows, initialSort, onRowClick, 
                   key={column.key}
                   className={`font-medium px-4 py-2.5 ${column.align === 'right' ? 'text-right' : ''}`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => toggle(column.key)}
-                    className="inline-flex items-center gap-1 hover:text-slate-700 transition"
-                  >
-                    {column.label}
-                    <span className={sort.key === column.key ? 'text-slate-700' : 'text-slate-300'}>
-                      {sort.key === column.key && sort.dir === 'asc' ? '↑' : '↓'}
-                    </span>
-                  </button>
+                  {column.sortable === false ? (
+                    column.label
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggle(column.key)}
+                      className="inline-flex items-center gap-1 hover:text-slate-700 transition"
+                    >
+                      {column.label}
+                      <span className={sort.key === column.key ? 'text-slate-700' : 'text-slate-300'}>
+                        {sort.key === column.key && sort.dir === 'asc' ? '↑' : '↓'}
+                      </span>
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>

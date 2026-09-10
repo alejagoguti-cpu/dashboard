@@ -1,0 +1,141 @@
+{
+  "id": "LvHnuLorkOUo7G7d",
+  "name": "Bitaxus · Competidores",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/competitors",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-competitors",
+      "name": "Webhook",
+      "webhookId": "bitaxus-competitors"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Cuentas a vigilar ────────────────────────────────────────────────────\n// Instagram usa Business Discovery: devuelve datos PÚBLICOS de otras cuentas\n// Business o Creator con el mismo token que ya usas. No funciona con perfiles\n// personales ni con cuentas privadas.\n//\n// YouTube usa el handle público del canal; no hace falta permiso especial.\nconst CUENTAS = [\n  { handle: 'growthopsdaily',  platform: 'instagram', focus: 'Operaciones de agencia' },\n  { handle: 'b2bfunnelguy',    platform: 'instagram', focus: 'Embudos y CRO' },\n  { handle: 'offerarchitect',  platform: 'instagram', focus: 'Diseño de oferta' },\n  { handle: '@salesdmpro',     platform: 'youtube',   focus: 'Prospección por DM' },\n];\n\nconst AJUSTES = {\n  IG_USER_ID: 'PON_AQUI_TU_IG_USER_ID',\n  GRAPH_API_VERSION: 'v25.0',\n  GRAPH_API_HOST: 'https://graph.facebook.com',\n  YT_DATA_HOST: 'https://www.googleapis.com',\n};\n\nconst env = (() => { try { return $env ?? {}; } catch { return {}; } })();\nconst IG_USER_ID = env.IG_USER_ID || AJUSTES.IG_USER_ID;\nconst VERSION = env.GRAPH_API_VERSION || AJUSTES.GRAPH_API_VERSION;\nconst GRAPH_HOST = env.GRAPH_API_HOST || AJUSTES.GRAPH_API_HOST;\nconst YT_HOST = env.YT_DATA_HOST || AJUSTES.YT_DATA_HOST;\n\n// Una llamada por cuenta; cada una lleva a dónde ir según su plataforma.\nreturn CUENTAS.map((c) => ({\n  json: {\n    ...c,\n    url: c.platform === 'instagram'\n      ? `${GRAPH_HOST}/${VERSION}/${IG_USER_ID}?fields=business_discovery.username(${c.handle})`\n        + '%7Busername%2Cname%2Cfollowers_count%2Cmedia_count%2Cprofile_picture_url'\n        + '%2Cmedia.limit(12)%7Blike_count%2Ccomments_count%2Ctimestamp%7D%7D'\n      : `${YT_HOST}/youtube/v3/channels?part=snippet,statistics&forHandle=${encodeURIComponent(c.handle)}`,\n  },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-cuentas",
+      "name": "Cuentas"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-consultar",
+      "name": "Consultar cuentas",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Instagram por Business Discovery, YouTube por handle público. Una cuenta sin datos no tumba las demás.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normaliza cuentas de Instagram y de YouTube a una misma fila de tabla.\nconst cuentas = $('Cuentas').all().map((i) => i.json);\nconst respuestas = $input.all();\n\nconst miles = (n) => String(n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\nconst fmt = (n) => (n == null ? null\n  : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M'\n  : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K'\n  : String(n));\n\nconst avisos = [];\n\nconst rows = cuentas.map((cuenta, i) => {\n  const body = respuestas[i]?.json ?? {};\n  const base = { id: cuenta.handle, handle: cuenta.handle, platform: cuenta.platform, focus: cuenta.focus };\n\n  if (cuenta.platform === 'instagram') {\n    const d = body.business_discovery;\n    if (!d) {\n      // Business Discovery falla con perfiles personales y cuentas privadas.\n      avisos.push(`${cuenta.handle}: ${body.error?.message ?? 'sin datos'}`);\n      return { ...base, handle: '@' + cuenta.handle, followers: null, engagement: null, cadence: null, posts: null };\n    }\n\n    const media = d.media?.data ?? [];\n    const interacciones = media.reduce((s, m) => s + (m.like_count ?? 0) + (m.comments_count ?? 0), 0);\n    // Sin alcance público, el engagement se calcula sobre seguidores, que es lo\n    // que se puede ver desde fuera. No es el mismo número que da su panel.\n    const engagement = media.length && d.followers_count\n      ? Math.round((interacciones / media.length / d.followers_count) * 1000) / 10\n      : null;\n\n    // Cadencia: publicaciones por semana según las fechas de las últimas piezas.\n    const fechas = media.map((m) => new Date(m.timestamp)).filter((x) => !Number.isNaN(x.getTime()));\n    let cadence = null;\n    if (fechas.length > 1) {\n      const dias = (Math.max(...fechas) - Math.min(...fechas)) / 86400000;\n      if (dias > 0) cadence = (Math.round((fechas.length / dias) * 7 * 10) / 10) + '/semana';\n    }\n\n    return { ...base,\n      handle: '@' + (d.username ?? cuenta.handle),\n      name: d.name ?? null,\n      followers: d.followers_count != null ? fmt(d.followers_count) : null,\n      followersRaw: d.followers_count ?? null,\n      posts: d.media_count != null ? miles(d.media_count) : null,\n      engagement, cadence };\n  }\n\n  const canal = body.items?.[0];\n  if (!canal) {\n    avisos.push(`${cuenta.handle}: ${body.error?.message ?? 'canal no encontrado'}`);\n    return { ...base, followers: null, engagement: null, cadence: null, posts: null };\n  }\n\n  const st = canal.statistics ?? {};\n  const subs = Number(st.subscriberCount);\n  const vistas = Number(st.viewCount);\n  const videos = Number(st.videoCount);\n\n  return { ...base,\n    handle: canal.snippet?.customUrl ?? cuenta.handle,\n    name: canal.snippet?.title ?? null,\n    followers: Number.isFinite(subs) ? fmt(subs) : null,\n    followersRaw: Number.isFinite(subs) ? subs : null,\n    posts: Number.isFinite(videos) ? miles(videos) : null,\n    // En YouTube lo comparable no es el engagement sino las vistas por vídeo.\n    viewsPerVideo: Number.isFinite(vistas) && videos ? fmt(Math.round(vistas / videos)) : null,\n    engagement: null, cadence: null };\n});\n\nrows.sort((a, b) => (b.followersRaw ?? -1) - (a.followersRaw ?? -1));\n\nreturn [{ json: { source: 'api', errors: avisos, items: rows } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-componer-competidores",
+      "name": "Componer competidores"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        880,
+        0
+      ],
+      "id": "respond-competitors",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Cuentas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cuentas": {
+      "main": [
+        [
+          {
+            "node": "Consultar cuentas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar cuentas": {
+      "main": [
+        [
+          {
+            "node": "Componer competidores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Componer competidores": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

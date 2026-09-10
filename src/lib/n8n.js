@@ -43,6 +43,8 @@ export const WEBHOOKS = {
   ytOverview: 'bitaxus/yt-overview',
   ytVideos: 'bitaxus/yt-videos',
   news: 'bitaxus/news',
+  topics: 'bitaxus/topics',
+  competitors: 'bitaxus/competitors',
 }
 
 export class N8nError extends Error {

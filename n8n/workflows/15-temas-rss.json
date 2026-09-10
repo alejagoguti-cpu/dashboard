@@ -1,0 +1,197 @@
+{
+  "id": "co9GpJf7WKKuuA7Q",
+  "name": "Bitaxus · Temas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "bitaxus/topics",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://localhost:5173"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "wh-topics",
+      "name": "Webhook",
+      "webhookId": "bitaxus-topics"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Fuentes RSS ──────────────────────────────────────────────────────────\n// Edita esta lista con los medios que quieras seguir. `scope` alimenta el\n// filtro Colombia / Internacional del panel.\n//\n// ⚠ Las URL cambian con el tiempo y algunos medios retiran sus feeds. Si una\n// deja de responder, el panel sigue funcionando con las demás y avisa de cuál\n// ha fallado.\nconst FEEDS = [\n  // Prensa colombiana\n  { url: 'https://www.elespectador.com/arc/outboundfeeds/rss/', source: 'El Espectador', scope: 'co' },\n  { url: 'https://www.eltiempo.com/rss/tecnosfera.xml',         source: 'El Tiempo',      scope: 'co' },\n  { url: 'https://www.larepublica.co/rss/empresas',             source: 'La República',   scope: 'co' },\n  { url: 'https://www.portafolio.co/rss/negocios',              source: 'Portafolio',     scope: 'co' },\n\n  // Prensa internacional\n  { url: 'https://techcrunch.com/feed/',                        source: 'TechCrunch',     scope: 'intl' },\n  { url: 'https://www.theverge.com/rss/index.xml',              source: 'The Verge',      scope: 'intl' },\n  { url: 'https://www.socialmediatoday.com/feeds/news/',        source: 'Social Media Today', scope: 'intl' },\n  { url: 'https://searchengineland.com/feed',                   source: 'Search Engine Land', scope: 'intl' },\n\n  // Blogs oficiales: los anuncios llegan aquí antes que a la prensa.\n  { url: 'https://blog.youtube/rss/',                           source: 'Blog de YouTube', scope: 'intl' },\n  { url: 'https://www.linkedin.com/blog/engineering/rss',       source: 'LinkedIn Blog',   scope: 'intl' },\n  { url: 'https://about.fb.com/news/feed/',                     source: 'Meta Newsroom',   scope: 'intl' },\n];\n\n// Un RSS no trae tema ni relevancia: se deducen del titular. Es una heurística,\n// y el panel la presenta como clasificación automática, no como dato del medio.\nconst TOPICS = {\n  Algoritmo:  ['algoritmo', 'alcance', 'feed', 'ranking', 'posicionamiento'],\n  Plataformas:['instagram', 'tiktok', 'youtube', 'linkedin', 'meta', 'reels', 'shorts', 'threads'],\n  Ventas:     ['ventas', 'prospección', 'leads', 'clientes', 'conversión', 'embudo'],\n  Formatos:   ['vídeo', 'video', 'carrusel', 'pódcast', 'podcast', 'newsletter', 'directo'],\n  Regulación: ['regulación', 'ley', 'sic', 'privacidad', 'datos personales', 'multa'],\n  IA:         ['inteligencia artificial', ' ia ', 'openai', 'modelo', 'automatiza'],\n  Negocio:    ['inversión', 'facturación', 'mercado', 'agencia', 'presupuesto', 'crecimiento'],\n};\n\n// A qué plataforma se refiere cada noticia. Una noticia puede tocar varias.\nconst PLATAFORMAS = {\n  instagram: ['instagram', 'reels', 'threads', 'meta ', 'stories'],\n  youtube:   ['youtube', 'shorts', 'yt studio'],\n  linkedin:  ['linkedin'],\n};\n\n// Cuantas más de estas aparezcan, más arriba sale la noticia.\nconst INTERES = ['instagram', 'linkedin', 'youtube', 'tiktok', 'reels', 'shorts',\n                 'creador', 'contenido', 'b2b', 'agencia', 'alcance', 'engagement',\n                 'algoritmo', 'marca', 'redes sociales', 'publicación', 'formato'];\n\n// Para medir tendencia hace falta traer todo lo que den los feeds, no una página.\nconst LIMIT = 500;\n\n// Ventana reciente contra la anterior, en horas.\nconst VENTANA = Math.min(Number($input.first().json.query?.hours ?? 24), 168);\n\nreturn FEEDS.map((feed) => ({\n  json: { ...feed, limit: LIMIT, ventana: VENTANA, topics: TOPICS, interes: INTERES, plataformas: PLATAFORMAS },\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-fuentes",
+      "name": "Fuentes"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 8000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "id": "http-descargar",
+      "name": "Descargar feeds",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "notes": "Un feed caído no detiene a los demás; el panel avisa de cuál falló.",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// El nodo XML descarta el elemento cuando el cuerpo no es XML válido, y al\n// desaparecer del flujo desplaza a los siguientes: los artículos acabarían\n// firmados por el medio equivocado. Aquí se sustituye cualquier respuesta no\n// válida por un feed vacío, de modo que entran y salen tantos elementos como\n// fuentes y la posición sigue siendo de fiar.\nconst VACIO = '<?xml version=\"1.0\"?><rss version=\"2.0\"><channel></channel></rss>';\n\nreturn $input.all().map((item, i) => {\n  const body = typeof item.json?.data === 'string' ? item.json.data : '';\n  const valido = /<(rss|feed)[\\s>]/i.test(body);\n  return { json: { data: valido ? body : VACIO, indice: i, respondio: valido } };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "id": "code-sanear",
+      "name": "Sanear respuestas"
+    },
+    {
+      "parameters": {
+        "mode": "xmlToJson",
+        "dataPropertyName": "data",
+        "options": {
+          "explicitArray": false,
+          "mergeAttrs": false
+        }
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        880,
+        0
+      ],
+      "id": "xml-parsear",
+      "name": "Parsear XML",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cuenta de qué habla la prensa y cómo cambia respecto al periodo anterior.\nconst feeds = $('Fuentes').all().map((i) => i.json);\nconst estado = $('Sanear respuestas').all().map((i) => i.json);\nconst parsed = $input.all();\n\nconst VENTANA = (feeds[0]?.ventana ?? 24) * 60;  // minutos\n\nfunction textOf(v) {\n  if (v == null) return '';\n  if (typeof v === 'string') return v;\n  return v._ ?? v['#text'] ?? '';\n}\n\nconst vistos = new Set();\n// Por tema: apariciones recientes, anteriores y de qué plataformas habla.\nconst acumulado = {};\nconst ejemplos = {};\n\nfor (const [name] of Object.entries(feeds[0]?.topics ?? {})) {\n  acumulado[name] = { reciente: 0, previo: 0, medios: new Set(), plataformas: new Set() };\n}\n\nparsed.forEach((entry, position) => {\n  const feed = feeds[position];\n  if (!feed) return;\n  if (estado[position]?.respondio) vistos.add(feed.source);\n\n  const raw = entry.json?.rss?.channel?.item ?? entry.json?.feed?.entry ?? null;\n  if (!raw) return;\n\n  for (const article of [].concat(raw)) {\n    const title = textOf(article.title).trim();\n    if (!title) continue;\n\n    const html = textOf(article.description) || textOf(article['content:encoded']) || textOf(article.summary);\n    const summary = html.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n    const haystack = (title + ' ' + summary).toLowerCase();\n\n    const when = textOf(article.pubDate) || textOf(article.published) || textOf(article.updated);\n    const published = when ? new Date(when) : null;\n    if (!published || Number.isNaN(published.getTime())) continue;\n    const edad = (Date.now() - published.getTime()) / 60000;\n\n    // Solo cuentan los dos periodos comparables; lo más viejo se descarta.\n    const cubo = edad <= VENTANA ? 'reciente' : edad <= VENTANA * 2 ? 'previo' : null;\n    if (!cubo) continue;\n\n    for (const [name, words] of Object.entries(feed.topics)) {\n      if (!words.some((w) => haystack.includes(w))) continue;\n      acumulado[name][cubo] += 1;\n      acumulado[name].medios.add(feed.source);\n      for (const [p, ws] of Object.entries(feed.plataformas)) {\n        if (ws.some((w) => haystack.includes(w))) acumulado[name].plataformas.add(p);\n      }\n      if (cubo === 'reciente' && !ejemplos[name]) {\n        ejemplos[name] = { title: title.slice(0, 120), source: feed.source };\n      }\n    }\n  }\n});\n\nconst topics = Object.entries(acumulado)\n  .map(([name, d]) => ({\n    id: name.toLowerCase(),\n    name,\n    // \"Volumen\" aquí es cuántas noticias lo tocan en la ventana, no búsquedas.\n    volume: d.reciente,\n    previous: d.previo,\n    // Sin histórico no hay tendencia que calcular: mejor null que un 100% falso.\n    trend: d.previo > 0 ? Math.round(((d.reciente - d.previo) / d.previo) * 100) : null,\n    sources: [...d.medios],\n    platforms: [...d.plataformas],\n    sample: ejemplos[name] ?? null,\n  }))\n  .filter((t) => t.volume > 0 || t.previous > 0)\n  .sort((a, b) => b.volume - a.volume);\n\nconst fallos = feeds.map((f) => f.source).filter((s) => !vistos.has(s));\n\nreturn [{ json: {\n  source: 'rss',\n  hours: feeds[0]?.ventana ?? 24,\n  errors: fallos.length ? [`Sin respuesta: ${fallos.join(', ')}`] : [],\n  items: topics,\n} }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "id": "code-contar-temas",
+      "name": "Contar temas"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1320,
+        0
+      ],
+      "id": "respond-topics",
+      "name": "Responder al panel"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Fuentes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fuentes": {
+      "main": [
+        [
+          {
+            "node": "Descargar feeds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar feeds": {
+      "main": [
+        [
+          {
+            "node": "Sanear respuestas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanear respuestas": {
+      "main": [
+        [
+          {
+            "node": "Parsear XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear XML": {
+      "main": [
+        [
+          {
+            "node": "Contar temas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contar temas": {
+      "main": [
+        [
+          {
+            "node": "Responder al panel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

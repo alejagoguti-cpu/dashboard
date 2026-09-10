@@ -17,6 +17,7 @@ export default function usePlatformData({ overview, items, range, itemsLabel = '
     account: null,
     kpis: null,
     posts: null,
+    meta: null,
     warnings: [],
   })
 
@@ -60,6 +61,8 @@ export default function usePlatformData({ overview, items, range, itemsLabel = '
       account: o?.account ?? null,
       kpis: o?.kpis ?? null,
       posts: list,
+      // El resto de la respuesta de la lista: ventana medida, origen, etc.
+      meta: p ?? null,
       warnings,
     })
   }, [connected, overview, items, range, itemsLabel])
