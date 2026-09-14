@@ -65,6 +65,7 @@ function Section({ id, onSchedule }) {
       return <Formats onSchedule={onSchedule} />
     case 'youtube':
     case 'linkedin':
+    case 'facebook':
       return <PlatformStudio id={id} onSchedule={onSchedule} />
     case 'analiticas':
       return <Analytics />
@@ -98,7 +99,7 @@ function Dashboard() {
         onClose={() => setNavOpen(false)}
       />
 
-      <main className="flex-1 overflow-y-auto dashboard-surface min-w-0">
+      <main className="flex-1 overflow-y-auto dashboard-surface min-w-0 lg:ml-64">
         <div className="max-w-[1520px] mx-auto p-4 sm:p-8 space-y-6">
           {/* La barra lateral se oculta en pantallas estrechas. */}
           <button
