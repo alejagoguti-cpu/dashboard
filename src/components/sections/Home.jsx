@@ -1,7 +1,6 @@
 import { platforms } from '../../data/dashboard.js'
 import { REFERENCE_TODAY, formatDayLabel, formatTime, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
-import KpiCards from '../KpiCards.jsx'
 import { FacebookIcon, InstagramIcon, LinkedInIcon, PlusIcon, TwitterIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
 import TelegramInbox from './TelegramInbox.jsx'
@@ -27,17 +26,15 @@ export default function Home({ onSchedule }) {
 
   return (
     <>
-      <SectionHeader title="Inicio" subtitle="Resumen de tu actividad y accesos a los estudios">
+      <SectionHeader title="Inicio" subtitle="Centro de ideas y gestión de contenido">
         <button type="button" onClick={() => onSchedule({})} className={primaryButton}>
           <PlusIcon className="w-3.5 h-3.5" />
           Programar Publicación
         </button>
       </SectionHeader>
 
-      <KpiCards />
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-8 space-y-6">
           <TelegramInbox onSchedule={onSchedule} />
 
           <div className={`${card} p-5 space-y-4`}>
@@ -88,7 +85,7 @@ export default function Home({ onSchedule }) {
           </div>
         </div>
 
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-4 space-y-6">
           <div className={`${card} p-5 space-y-3`}>
             <h2 className="text-sm font-semibold text-slate-900">Estudios</h2>
             {Object.values(platforms).map((platform) => {
