@@ -96,7 +96,7 @@ function UploadCell({ onFiles }) {
 }
 
 export default function FacebookFeedPlanner({ onSchedule }) {
-  const { posts, preview, setPreview, account, notify, updatePost } = useDashboard()
+  const { posts, preview, setPreview, account, notify, updatePost, removePost } = useDashboard()
   const [detail, setDetail] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [editMode, setEditMode] = useState(false)

@@ -91,7 +91,7 @@ function UploadCell({ onFiles }) {
 }
 
 export default function LinkedInFeedPlanner({ onSchedule }) {
-  const { posts, account, notify, updatePost } = useDashboard()
+  const { posts, account, notify, updatePost, removePost } = useDashboard()
   const [detail, setDetail] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [driveLink, setDriveLink] = useState('')
@@ -172,7 +172,7 @@ export default function LinkedInFeedPlanner({ onSchedule }) {
                 key={post.id}
                 article={post}
                 onOpen={setDetail}
-                onDelete={() => {}}
+                onDelete={() => removePost(post.id)}
               />
             ))}
             <div className="pt-2">
