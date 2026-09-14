@@ -1,9 +1,11 @@
-import { platformKpis, platforms } from '../../data/dashboard.js'
+import { useState } from 'react'
+import { platformKpis, platformRecentPosts, platforms } from '../../data/dashboard.js'
 import { formatDayLabel, formatTime, REFERENCE_TODAY, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
 import { EyeIcon, HeartIcon, LinkIcon, PlusIcon, UserPlusIcon, CloseIcon } from '../icons.jsx'
 import PlatformNews from './PlatformNews.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
+import Modal from '../ui/Modal.jsx'
 
 const iconsById = { eye: EyeIcon, heart: HeartIcon, userPlus: UserPlusIcon, link: LinkIcon }
 
@@ -59,6 +61,7 @@ function LivePill({ live }) {
 
 export default function PlatformStudio({ id, onSchedule }) {
   const { posts, removePost, linkedin, youtube, setSection } = useDashboard()
+  const [detail, setDetail] = useState(null)
   const platform = platforms[id]
 
   const live = { linkedin, youtube }[id] ?? null
@@ -95,6 +98,8 @@ export default function PlatformStudio({ id, onSchedule }) {
     .sort((a, b) => new Date(a.at) - new Date(b.at))
 
   const upcoming = queue.filter((post) => toDate(post.at) >= REFERENCE_TODAY)
+  const recentPosts = live?.posts?.length ? live.posts : platformRecentPosts[id]
+  const showingDemo = !live?.posts?.length
 
   return (
     <>
@@ -145,23 +150,31 @@ export default function PlatformStudio({ id, onSchedule }) {
 
       <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
 
-      {live?.posts && (
+      {recentPosts?.length > 0 && (
         <div className={`${card} p-5 space-y-4`}>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">Publicaciones recientes</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Lo ya publicado en {platform.label}, con su rendimiento real
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Publicaciones recientes</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {id === 'youtube'
+                  ? 'Miniaturas, métricas y análisis de cada video'
+                  : 'Contenido, formato y rendimiento de cada publicación'}
+              </p>
+            </div>
+            {showingDemo && (
+              <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                demo
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
-            {live.posts.map((post) => (
-              <a
+            {recentPosts.map((post) => (
+              <button
+                type="button"
                 key={post.id}
-                href={post.permalink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group rounded-lg border border-slate-200 overflow-hidden hover:border-slate-300 transition flex flex-col bg-white"
+                onClick={() => setDetail(post)}
+                className="group rounded-lg border border-slate-200 overflow-hidden hover:border-slate-400 hover:shadow-sm transition flex flex-col bg-white text-left"
               >
                 {post.image ? (
                   <div className="relative aspect-video bg-slate-900 overflow-hidden">
@@ -193,6 +206,12 @@ export default function PlatformStudio({ id, onSchedule }) {
                     <span className={kindChip}>{kindLabel[post.kind] ?? 'Publicación'}</span>
                   </div>
 
+                  {id === 'linkedin' && (
+                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-3">
+                      {post.excerpt || post.content || post.title}
+                    </p>
+                  )}
+
                   <dl
                     className="grid gap-2 mt-auto pt-2 border-t border-slate-100 text-center"
                     style={{
@@ -209,11 +228,80 @@ export default function PlatformStudio({ id, onSchedule }) {
                     ))}
                   </dl>
                 </div>
-              </a>
+              </button>
             ))}
           </div>
         </div>
       )}
+
+      <Modal
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        title={detail?.title}
+        subtitle={id === 'youtube' ? 'Análisis del video y su transcripción' : 'Contenido y análisis de la publicación'}
+        width="max-w-3xl"
+        footer={detail && (
+          <>
+            {detail.permalink && (
+              <a
+                href={detail.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900"
+              >
+                Ver original ↗
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setDetail(null)
+                onSchedule({ platform: id, title: detail.title, content: detail.adaptedScript })
+              }}
+              className={primaryButton}
+            >
+              Adaptar y programar
+            </button>
+          </>
+        )}
+      >
+        {detail && (
+          <div className="space-y-4">
+            <div className={`grid gap-4 ${detail.image ? 'sm:grid-cols-[180px_1fr]' : ''}`}>
+              {detail.image && (
+                <img src={detail.image} alt={detail.title} className="w-full aspect-video sm:aspect-[4/3] object-cover rounded-lg bg-slate-900" />
+              )}
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                  {id === 'youtube' ? 'Transcripción' : 'Publicación completa'}
+                </p>
+                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                  {detail.transcript || detail.content || detail.excerpt || 'La fuente todavía no entregó el texto de esta pieza.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                ['Hook', detail.hook],
+                ['Estructura', detail.structure],
+                ['CTA', detail.cta],
+                ['Por qué funciona', detail.why],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                  <p className="text-xs text-slate-700 mt-1 leading-relaxed">{value || 'Pendiente de analizar'}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg border border-rose-100 bg-rose-50/40 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-rose-500">Guion adaptado para tu marca</p>
+              <p className="text-xs text-slate-700 mt-1.5 leading-relaxed">{detail.adaptedScript || 'Conecta el workflow de análisis para generar una adaptación automática.'}</p>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <div className={`${card} p-5 space-y-4`}>
         <div className="flex items-center justify-between">
