@@ -4,7 +4,6 @@ import ContentTools from './components/ContentTools.jsx'
 import FeedPlanner from './components/FeedPlanner.jsx'
 import Header from './components/Header.jsx'
 import KpiCards from './components/KpiCards.jsx'
-import PlatformNews from './components/sections/PlatformNews.jsx'
 import LoggedOut from './components/LoggedOut.jsx'
 import ScheduleModal from './components/ScheduleModal.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -14,9 +13,7 @@ import WeeklyCalendar from './components/WeeklyCalendar.jsx'
 import Analytics from './components/sections/Analytics.jsx'
 import CalendarMonth from './components/sections/CalendarMonth.jsx'
 import Competitors from './components/sections/Competitors.jsx'
-import Formats from './components/sections/Formats.jsx'
 import Home from './components/sections/Home.jsx'
-import News from './components/sections/News.jsx'
 import PlatformStudio from './components/sections/PlatformStudio.jsx'
 import Topics from './components/sections/Topics.jsx'
 import Toasts from './components/ui/Toasts.jsx'
@@ -38,11 +35,6 @@ function InstagramStudio({ onSchedule }) {
 
         <div className="lg:col-span-5 space-y-6">
           <WeeklyCalendar onSchedule={onSchedule} />
-          <PlatformNews
-            platform="instagram"
-            label="Instagram"
-            onOpenAll={() => setSection('noticias')}
-          />
           <TopReels />
         </div>
       </div>
@@ -57,12 +49,8 @@ function Section({ id, onSchedule }) {
       return <InstagramStudio onSchedule={onSchedule} />
     case 'inicio':
       return <Home onSchedule={onSchedule} />
-    case 'noticias':
-      return <News onSchedule={onSchedule} />
     case 'temas':
       return <Topics onSchedule={onSchedule} />
-    case 'formatos':
-      return <Formats onSchedule={onSchedule} />
     case 'youtube':
     case 'linkedin':
     case 'facebook':

@@ -5,12 +5,10 @@ import {
   ChartIcon,
   CalendarIcon,
   ChevronDownIcon,
-  FormatsIcon,
   HashtagIcon,
   HomeIcon,
   InstagramIcon,
   LinkedInIcon,
-  NewsIcon,
   UsersIcon,
   YouTubeIcon,
   FacebookIcon,
@@ -26,9 +24,7 @@ export const sections = [
     id: 'investigacion',
     title: 'Investigación',
     items: [
-      { id: 'noticias', label: 'Noticias', Icon: NewsIcon },
       { id: 'temas', label: 'Temas', Icon: HashtagIcon },
-      { id: 'formatos', label: 'Formatos', Icon: FormatsIcon },
     ],
   },
   {
