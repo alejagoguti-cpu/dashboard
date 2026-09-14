@@ -2,14 +2,14 @@ import { platforms } from '../../data/dashboard.js'
 import { REFERENCE_TODAY, formatDayLabel, formatTime, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
 import KpiCards from '../KpiCards.jsx'
-import { FacebookIcon, InstagramIcon, LinkedInIcon, PlusIcon, YouTubeIcon } from '../icons.jsx'
+import { FacebookIcon, InstagramIcon, LinkedInIcon, PlusIcon, TwitterIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
 import TelegramInbox from './TelegramInbox.jsx'
 
 const platformIcons = {
   facebook: FacebookIcon,
   instagram: InstagramIcon,
-  youtube: YouTubeIcon,
+  twitter: TwitterIcon,
   linkedin: LinkedInIcon,
 }
 
