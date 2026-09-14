@@ -4,6 +4,7 @@ import { formatDayLabel, formatTime, REFERENCE_TODAY, toDate } from '../../lib/d
 import { useDashboard } from '../../state/DashboardContext.jsx'
 import { PlusIcon, CloseIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
+import FacebookFeedPlanner from '../FacebookFeedPlanner.jsx'
 import Modal from '../ui/Modal.jsx'
 
 const kindLabel = {
@@ -77,7 +78,13 @@ export default function FacebookStudio({ onSchedule }) {
         </button>
       </SectionHeader>
 
-      <div className={`${card} p-5 space-y-4`}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-7 space-y-6">
+          <FacebookFeedPlanner onSchedule={onSchedule} />
+        </div>
+
+        <div className="lg:col-span-5 space-y-6">
+          <div className={`${card} p-5 space-y-4`}>
         <div>
           <h2 className="text-sm font-semibold text-slate-900">Cola de publicaciones</h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -134,6 +141,8 @@ export default function FacebookStudio({ onSchedule }) {
             ))}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {recentPosts?.length > 0 && (
