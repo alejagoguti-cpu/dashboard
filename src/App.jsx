@@ -91,15 +91,15 @@ function Dashboard() {
   if (loggedOut) return <LoggedOut />
 
   return (
-    <div className="h-full flex bg-[#fbfbfb] text-slate-800 font-sans antialiased overflow-hidden">
+    <div className="h-full flex bg-[#f6f7fb] text-slate-800 font-sans antialiased overflow-hidden">
       <Sidebar
         onAccountAction={setAccountModal}
         open={navOpen}
         onClose={() => setNavOpen(false)}
       />
 
-      <main className="flex-1 overflow-y-auto bg-surface-gray min-w-0">
-        <div className="max-w-[1400px] mx-auto p-4 sm:p-7 space-y-6">
+      <main className="flex-1 overflow-y-auto dashboard-surface min-w-0">
+        <div className="max-w-[1520px] mx-auto p-4 sm:p-8 space-y-6">
           {/* La barra lateral se oculta en pantallas estrechas. */}
           <button
             type="button"
