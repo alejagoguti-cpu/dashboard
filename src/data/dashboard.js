@@ -135,6 +135,7 @@ export const postFormats = {
   facebook: ['Reel', 'Carrusel', 'Imagen', 'Story', 'Texto'],
   youtube: ['Vídeo largo', 'Short', 'Directo'],
   linkedin: ['Artículo', 'Carrusel', 'Texto', 'Vídeo'],
+  twitter: ['Hilo', 'Texto', 'Imagen', 'Vídeo'],
 }
 
 /** Metadatos de cada estudio de creación. */
@@ -143,6 +144,7 @@ export const platforms = {
   facebook: { id: 'facebook', label: 'Facebook', handle: 'Bitaxus', audience: '86.4K seguidores' },
   youtube: { id: 'youtube', label: 'YouTube', handle: '@bitaxus', audience: '41.2K suscriptores' },
   linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'company/bitaxus', audience: '23.8K contactos' },
+  twitter: { id: 'twitter', label: 'Twitter', handle: '@bitaxus', audience: '52.3K seguidores' },
 }
 
 /** KPIs por plataforma para los estudios de YouTube y LinkedIn. */
@@ -295,6 +297,62 @@ export const platformRecentPosts = {
       cta: 'Convierte hoy tu mejor tesis en dos ángulos nuevos.',
       why: 'Promete eficiencia y presenta una estructura que el lector puede copiar.',
       adaptedScript: 'No descartes una idea porque ya la publicaste. Cámbiale la prueba: conviértela en caso, lista, historia, objeción o guía. La tesis sigue siendo la misma; lo que cambia es la puerta de entrada.',
+    },
+  ],
+  twitter: [
+    {
+      id: 'tw-demo-1',
+      title: 'El gancho que detiene el scroll',
+      excerpt: 'En Twitter el primer párrafo decide todo. Aprende cuál fue el gancho de nuestro thread más guardado.',
+      image: media.estrategiasDigitales,
+      kind: 'text',
+      permalink: 'https://www.twitter.com/',
+      metrics: [
+        { label: 'Impresiones', value: '142.3K' },
+        { label: 'Retweets', value: '3.8K' },
+        { label: 'Guardados', value: '2.1K' },
+      ],
+      hook: 'La mayoría de threads pierden a la audiencia en el primer párrafo.',
+      structure: 'Problema → revelación → pasos → conclusión',
+      cta: 'Guarda este hilo y aplícalo en tu próximo thread.',
+      why: 'Promete algo concreto y demuestra una estructura probada.',
+      adaptedScript: 'Tu thread no compite con algoritmo: compite con el feed. El primer tweet debe detener el scroll, no seguir la conversación. Empieza con una afirmación incómoda, no con un contexto.',
+    },
+    {
+      id: 'tw-demo-2',
+      title: 'Hilos que generan leads en B2B',
+      excerpt: 'Cómo convertir 10 tweets en una conversación comercial.',
+      image: media.embudoB2B,
+      kind: 'text',
+      permalink: 'https://www.twitter.com/',
+      metrics: [
+        { label: 'Impresiones', value: '98.7K' },
+        { label: 'Retweets', value: '2.4K' },
+        { label: 'Respuestas', value: '287' },
+      ],
+      hook: 'Los threads B2B fracasan porque venden desde el primer tweet.',
+      structure: 'Diagnóstico → pasos prácticos → resultado → invitación',
+      cta: 'Estructura tu próximo thread con estos cinco elementos.',
+      why: 'Reencuadra el problema y ofrece una guía fácil de aplicar.',
+      adaptedScript: 'Tu thread no necesita 10 tweets si 5 resuelven el problema. Empieza con lo que observaste (problema), sigue con cómo otros lo solucionan (pasos), muestra el resultado y termina con una pregunta. Eso abre la conversación antes de vender.',
+    },
+    {
+      id: 'tw-demo-3',
+      title: 'Métricas que importan en Twitter',
+      excerpt: 'Deja de obsesionarte con followers y enfócate en lo que vende.',
+      image: media.frameworkContenido,
+      kind: 'text',
+      permalink: 'https://www.twitter.com/',
+      metrics: [
+        { label: 'Impresiones', value: '76.4K' },
+        { label: 'Retweets', value: '1.9K' },
+        { label: 'Guardar Rate', value: '2.8%' },
+      ],
+      hook: 'Más followers no significan más leads.',
+      structure: 'Confesión → métricas correctas → ejemplos → acción',
+      cta: 'Revisa cuál de tus tweets generó más valor (no más vistas).',
+      why: 'Cuestiona una métrica popular y presenta una alternativa medible.',
+      adaptedScript: 'Tus followers no son clientes. El guardado de tu tweet es. Las respuestas de clientes potenciales son. Los clics en tu enlace son. Mide lo que avanza a la persona, no lo que complace al algoritmo.',
     },
   ],
 }
