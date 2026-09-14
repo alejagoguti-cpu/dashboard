@@ -1,13 +1,10 @@
 import { useState } from 'react'
-import { platformKpis, platformRecentPosts, platforms } from '../../data/dashboard.js'
+import { platformRecentPosts, platforms } from '../../data/dashboard.js'
 import { formatDayLabel, formatTime, REFERENCE_TODAY, toDate } from '../../lib/dates.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
-import { EyeIcon, HeartIcon, LinkIcon, PlusIcon, UserPlusIcon, CloseIcon } from '../icons.jsx'
-import PlatformNews from './PlatformNews.jsx'
+import { LinkIcon, PlusIcon, UserPlusIcon, CloseIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
 import Modal from '../ui/Modal.jsx'
-
-const iconsById = { eye: EyeIcon, heart: HeartIcon, userPlus: UserPlusIcon, link: LinkIcon }
 
 const kindLabel = {
   image: 'Imagen',
@@ -65,27 +62,6 @@ export default function PlatformStudio({ id, onSchedule }) {
   const platform = platforms[id]
 
   const live = { linkedin, youtube }[id] ?? null
-
-  /**
-   * Un KPI real sustituye al de ejemplo solo si trae valor; si la API no lo
-   * devolvió, se conserva la cifra de demostración y se marca como tal.
-   */
-  const kpis = platformKpis[id].map((kpi) => {
-    const value = live?.kpis?.[kpi.id]
-    if (!value?.value) return { ...kpi, live: false }
-    return {
-      ...kpi,
-      // La API puede medir algo distinto de lo que suponía el dato de ejemplo,
-      // así que también puede renombrar el KPI.
-      label: value.label ?? kpi.label,
-      value: value.value,
-      caption: value.caption ?? kpi.caption,
-      delta: null,
-      live: true,
-    }
-  })
-
-  const showOrigin = live?.status === 'ready'
   const audience = live?.account?.audience ?? platform.audience
   const handle = live?.account?.handle ?? platform.handle
   // Con datos en vivo el título lleva el nombre real de la página.
@@ -113,48 +89,6 @@ export default function PlatformStudio({ id, onSchedule }) {
           Programar Publicación
         </button>
       </SectionHeader>
-
-      {id === 'youtube' && (
-        <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
-      )}
-
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        {kpis.map(({ id: kpiId, label, value, delta, trend, caption, icon, live: isLive }) => {
-          const Icon = iconsById[icon]
-
-          return (
-            <div key={kpiId} className={`${card} p-4 flex items-center justify-between`}>
-              <div>
-                <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                  {label}
-                  {showOrigin && !isLive && (
-                    <span
-                      title="La API no devolvió esta métrica; se muestra el dato de ejemplo"
-                      className="text-[9px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1 rounded normal-case"
-                    >
-                      demo
-                    </span>
-                  )}
-                </span>
-                <div className="text-xl font-bold text-slate-900 mt-1">{value}</div>
-                <span className="text-[11px] font-medium text-slate-600 flex items-center gap-1 mt-0.5">
-                  {delta && (
-                    <span className={trend === 'down' ? 'text-rose-600' : 'text-emerald-600'}>{delta}</span>
-                  )}
-                  {caption}
-                </span>
-              </div>
-              <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-100">
-                <Icon className="w-4 h-4" />
-              </div>
-            </div>
-          )
-        })}
-      </section>
-
-      {id !== 'youtube' && (
-        <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
-      )}
 
       {recentPosts?.length > 0 && (
         <div className={`${card} p-5 space-y-4`}>
