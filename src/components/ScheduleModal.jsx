@@ -18,6 +18,7 @@ export default function ScheduleModal({ draft, onClose }) {
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [assetUrl, setAssetUrl] = useState('')
   const [platform, setPlatform] = useState('instagram')
   const [format, setFormat] = useState(postFormats.instagram[0])
   const [date, setDate] = useState('')
@@ -33,6 +34,7 @@ export default function ScheduleModal({ draft, onClose }) {
 
     setTitle(draft.title ?? '')
     setContent(draft.content ?? '')
+    setAssetUrl(draft.assetUrl ?? '')
     setPlatform(target)
     setFormat(draft.format ?? postFormats[target][0])
     setDate(toDateInput(initial))
@@ -62,6 +64,7 @@ export default function ScheduleModal({ draft, onClose }) {
       format,
       title: title.trim(),
       content: content.trim(),
+      assetUrl: assetUrl.trim(),
       // Las franjas de 19:00 a 21:30 rinden mejor según los datos del panel.
       score: at.getHours() >= 19 && at.getHours() <= 21 ? 92 : 74,
     })
@@ -75,7 +78,7 @@ export default function ScheduleModal({ draft, onClose }) {
       open={open}
       onClose={onClose}
       title="Programar publicación"
-      subtitle="La franja de 19:00 a 21:30 concentra la mayor respuesta"
+      subtitle="Contenido, pieza gráfica y fecha en un solo paso"
       footer={
         <>
           <button
@@ -96,7 +99,8 @@ export default function ScheduleModal({ draft, onClose }) {
         </>
       }
     >
-      <form id="schedule-form" onSubmit={submit} className="space-y-3.5">
+      <form id="schedule-form" onSubmit={submit} className="space-y-5">
+        <div className="schedule-step"><span>1</span><div><b>Contenido</b><small>Qué vas a publicar</small></div></div>
         <div>
           <label htmlFor="schedule-title" className="block text-[11px] font-medium text-slate-500 mb-1.5">
             Título
@@ -113,6 +117,14 @@ export default function ScheduleModal({ draft, onClose }) {
         </div>
 
         <div>
+          <label htmlFor="schedule-asset" className="block text-[11px] font-medium text-slate-500 mb-1.5">Piezas gráficas en Google Drive <span className="text-slate-400">(opcional)</span></label>
+          <div className="relative"><span className="absolute left-3 top-2.5 text-slate-400">↗</span><input id="schedule-asset" type="url" value={assetUrl} onChange={(event)=>setAssetUrl(event.target.value)} placeholder="https://drive.google.com/drive/folders/…" className={`${field} pl-8`}/></div>
+          <p className="text-[10px] text-slate-400 mt-1.5">Comparte una carpeta o archivo con acceso mediante enlace.</p>
+        </div>
+
+        <div className="schedule-step"><span>2</span><div><b>Destino</b><small>Red social y formato</small></div></div>
+
+        <div>
           <label htmlFor="schedule-content" className="block text-[11px] font-medium text-slate-500 mb-1.5">
             Contenido
           </label>
@@ -126,6 +138,7 @@ export default function ScheduleModal({ draft, onClose }) {
           />
         </div>
 
+        <div className="schedule-step"><span>3</span><div><b>Publicación</b><small>Cuándo debe salir</small></div></div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="schedule-platform" className="block text-[11px] font-medium text-slate-500 mb-1.5">

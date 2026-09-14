@@ -13,6 +13,7 @@ import {
   NewsIcon,
   UsersIcon,
   YouTubeIcon,
+  FacebookIcon,
 } from './icons.jsx'
 
 export const sections = [
@@ -34,6 +35,7 @@ export const sections = [
     id: 'crear',
     title: 'Crear',
     items: [
+      { id: 'facebook', label: 'Facebook', Icon: FacebookIcon },
       { id: 'youtube', label: 'YouTube', Icon: YouTubeIcon },
       { id: 'instagram', label: 'Instagram', Icon: InstagramIcon },
       { id: 'linkedin', label: 'LinkedIn', Icon: LinkedInIcon },
@@ -152,7 +154,7 @@ export default function Sidebar({ onAccountAction, open, onClose }) {
 
       <aside
         className={`w-64 bg-[#0b0d14] flex-shrink-0 flex flex-col justify-between border-r border-white/[.06] select-none h-full
-          fixed inset-y-0 left-0 z-40 transition-transform lg:static lg:translate-x-0 lg:z-20
+          fixed inset-y-0 left-0 z-40 transition-transform lg:fixed lg:translate-x-0 lg:z-20
           ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
       <div className="flex flex-col flex-1 overflow-y-auto pt-6 px-4">
