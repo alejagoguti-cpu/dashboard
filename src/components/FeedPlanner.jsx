@@ -125,6 +125,8 @@ export default function FeedPlanner({ onSchedule }) {
 
   const [dragId, setDragId] = useState(null)
   const [detail, setDetail] = useState(null)
+  const [editMode, setEditMode] = useState(false)
+  const [driveLink, setDriveLink] = useState('')
 
   // La primera publicación de la cola se marca en verde; el resto, en gris.
   const postsById = useMemo(() => {
@@ -264,66 +266,145 @@ export default function FeedPlanner({ onSchedule }) {
 
       <Modal
         open={Boolean(detail)}
-        onClose={() => setDetail(null)}
-        title={detail?.title}
+        onClose={() => {
+          setDetail(null)
+          setEditMode(false)
+          setDriveLink('')
+        }}
+        title={editMode ? 'Editar publicación' : detail?.title}
         subtitle={
-          detailPost
+          editMode
+            ? 'Pega el link de Google Drive para previsualizar'
+            : detailPost
             ? `Programado para ${formatDayLabel(detailPost.at)} a las ${formatTime(detailPost.at)}`
             : 'Sin programar'
         }
         footer={
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                removeSlot(detail.id)
-                setDetail(null)
-                notify('Pieza eliminada del feed')
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition"
-            >
-              <TrashIcon className="w-3.5 h-3.5" />
-              Eliminar del feed
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const title = detail.title
-                setDetail(null)
-                onSchedule({ title, platform: 'instagram' })
-              }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
-            >
-              {detailPost ? 'Reprogramar' : 'Programar'}
-            </button>
-          </>
+          editMode ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false)
+                  setDriveLink('')
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (driveLink && detail) {
+                    const fileId = driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]
+                    if (fileId) {
+                      const previewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+                      const updatedSlot = { ...detail, image: previewUrl, driveLink }
+                      notify('Imagen actualizada desde Drive')
+                      setEditMode(false)
+                      setDriveLink('')
+                    } else {
+                      notify('Link de Drive inválido')
+                    }
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
+              >
+                Guardar preview
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Editar imagen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeSlot(detail.id)
+                  setDetail(null)
+                  notify('Pieza eliminada del feed')
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+                Eliminar del feed
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const title = detail.title
+                  setDetail(null)
+                  onSchedule({ title, platform: 'instagram' })
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition"
+              >
+                {detailPost ? 'Reprogramar' : 'Programar'}
+              </button>
+            </>
+          )
         }
       >
         {detail && (
-          <div className="flex gap-4">
-            <img
-              src={detail.image}
-              alt={detail.alt}
-              className="w-32 h-32 rounded-lg object-cover bg-slate-900 flex-shrink-0"
-            />
-            <div className="space-y-2 text-xs text-slate-600">
-              <p>
-                <span className="text-slate-400">Formato: </span>
-                {detail.format === 'reel' ? 'Reel' : detail.format === 'carousel' ? 'Carrusel' : 'Imagen'}
-              </p>
-              <p>
-                <span className="text-slate-400">Posición en el feed: </span>
-                {slots.findIndex((slot) => slot.id === detail.id) + 1} de {slots.length}
-              </p>
-              {detail.stats && (
-                <p>
-                  <span className="text-slate-400">Métricas: </span>
-                  {detail.stats.join(' · ')}
+          editMode ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Link de Google Drive
+                </label>
+                <input
+                  type="text"
+                  value={driveLink}
+                  onChange={(e) => setDriveLink(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/ARCHIVO_ID/view"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Copia el link compartible de Drive (debe estar públicamente accesible)
                 </p>
+              </div>
+              {driveLink && (
+                <div className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 p-3">
+                  <p className="text-[11px] font-semibold text-slate-600 mb-2">Vista previa:</p>
+                  <img
+                    src={`https://drive.google.com/uc?export=view&id=${driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]}`}
+                    alt="Preview"
+                    className="w-full rounded object-cover max-h-48"
+                    onError={() => notify('No se pudo cargar la imagen del Drive')}
+                  />
+                </div>
               )}
-              {detail.note && <p className="text-slate-500">{detail.note}</p>}
             </div>
-          </div>
+          ) : (
+            <div className="flex gap-4">
+              <img
+                src={detail.image}
+                alt={detail.alt}
+                className="w-32 h-32 rounded-lg object-cover bg-slate-900 flex-shrink-0"
+              />
+              <div className="space-y-2 text-xs text-slate-600">
+                <p>
+                  <span className="text-slate-400">Formato: </span>
+                  {detail.format === 'reel' ? 'Reel' : detail.format === 'carousel' ? 'Carrusel' : 'Imagen'}
+                </p>
+                <p>
+                  <span className="text-slate-400">Posición en el feed: </span>
+                  {slots.findIndex((slot) => slot.id === detail.id) + 1} de {slots.length}
+                </p>
+                {detail.stats && (
+                  <p>
+                    <span className="text-slate-400">Métricas: </span>
+                    {detail.stats.join(' · ')}
+                  </p>
+                )}
+                {detail.note && <p className="text-slate-500">{detail.note}</p>}
+              </div>
+            </div>
+          )
         )}
       </Modal>
     </div>
