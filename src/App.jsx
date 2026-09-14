@@ -34,8 +34,9 @@ function InstagramStudio({ onSchedule }) {
         </div>
 
         <div className="lg:col-span-5 space-y-6">
-          <WeeklyCalendar onSchedule={onSchedule} />
           <TopReels />
+          <TopReels />
+          <WeeklyCalendar onSchedule={onSchedule} />
         </div>
       </div>
     </>
