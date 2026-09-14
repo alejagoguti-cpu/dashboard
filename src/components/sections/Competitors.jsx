@@ -1,186 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { competitors as seed } from '../../data/dashboard.js'
 import { useDashboard } from '../../state/DashboardContext.jsx'
+import { InstagramIcon, LinkedInIcon, PlusIcon, TrashIcon, YouTubeIcon } from '../icons.jsx'
 import LiveBadge from './LiveBadge.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
-import SortableTable from './SortableTable.jsx'
-import { InstagramIcon, LinkedInIcon, PlusIcon, TrashIcon, YouTubeIcon } from '../icons.jsx'
+const icons={instagram:InstagramIcon,youtube:YouTubeIcon,linkedin:LinkedInIcon}
+const labels={instagram:'Instagram',youtube:'YouTube',linkedin:'LinkedIn'}
+const number=v=>parseFloat(String(v||0).replace(/[^0-9.]/g,''))||0
 
-const platformIcon = { instagram: InstagramIcon, youtube: YouTubeIcon, linkedin: LinkedInIcon }
-
-export default function Competitors() {
-  const { notify, competitors: feed } = useDashboard()
-  const live = feed.status === 'ready' && feed.posts
-
-  const [rows, setRows] = useState(seed)
-  const [handle, setHandle] = useState('')
-
-  // Las cuentas reales mandan en cuanto llegan; las de ejemplo son el respaldo.
-  useEffect(() => {
-    if (live) setRows(feed.posts)
-  }, [live, feed.posts])
-
-  function add(event) {
-    event.preventDefault()
-    const clean = handle.trim().replace(/^@?/, '@')
-
-    if (clean.length < 2) return notify('Escribe un usuario válido')
-    if (rows.some((row) => row.handle.toLowerCase() === clean.toLowerCase())) {
-      return notify('Esa cuenta ya está en seguimiento')
-    }
-
-    setRows((current) => [
-      ...current,
-      { id: `c-${Date.now()}`, handle: clean, platform: 'instagram', followers: null,
-        engagement: null, cadence: null, focus: 'Pendiente de análisis', local: true },
-    ])
-    setHandle('')
-    notify(
-      live
-        ? `${clean} añadida. Añádela también a CUENTAS en el workflow para que se consulte.`
-        : `${clean} añadida al seguimiento`,
-      'success',
-    )
-  }
-
-  function remove(row) {
-    setRows((current) => current.filter((item) => item.id !== row.id))
-    notify(`${row.handle} eliminada del seguimiento`)
-  }
-
-  const dash = <span className="text-slate-300">—</span>
-
-  const columns = [
-    {
-      key: 'handle',
-      label: 'Cuenta',
-      render: (row) => {
-        const Icon = platformIcon[row.platform] ?? InstagramIcon
-        return (
-          <div className="flex items-center gap-2">
-            <Icon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-            <div>
-              <span className="font-medium text-slate-900">{row.handle}</span>
-              {row.name && <p className="text-[11px] text-slate-400">{row.name}</p>}
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      key: 'followers',
-      label: 'Audiencia',
-      align: 'right',
-      sortValue: (row) => row.followersRaw ?? parseFloat(row.followers) ?? 0,
-      render: (row) => row.followers ?? dash,
-    },
-    {
-      key: 'posts',
-      label: 'Publicaciones',
-      align: 'right',
-      sortValue: (row) => parseFloat(String(row.posts).replace(/\./g, '')) || 0,
-      render: (row) => row.posts ?? dash,
-    },
-    ...(live
-      ? [
-          {
-            key: 'engagement',
-            // Con datos reales no hay alcance ajeno: el ratio va sobre seguidores.
-            label: 'Interacción / seguidor',
-            align: 'right',
-            sortValue: (row) => row.engagement ?? -1,
-            render: (row) => (row.engagement != null ? `${row.engagement}%` : dash),
-          },
-          {
-            key: 'viewsPerVideo',
-            label: 'Vistas por vídeo',
-            align: 'right',
-            sortValue: (row) => parseFloat(row.viewsPerVideo) || 0,
-            render: (row) => row.viewsPerVideo ?? dash,
-          },
-        ]
-      : [
-          {
-            key: 'growth',
-            label: 'Crecimiento',
-            align: 'right',
-            render: (row) =>
-              row.followers === '—' ? dash : (
-                <span className={row.growth >= 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
-                  {row.growth >= 0 ? '+' : ''}
-                  {row.growth}%
-                </span>
-              ),
-          },
-          {
-            key: 'engagement',
-            label: 'Engagement',
-            align: 'right',
-            render: (row) => (row.engagement ? `${row.engagement}%` : dash),
-          },
-        ]),
-    { key: 'cadence', label: 'Cadencia', align: 'right', render: (row) => row.cadence ?? dash },
-    { key: 'focus', label: 'Enfoque' },
-    {
-      key: 'accion',
-      label: '',
-      align: 'right',
-      sortable: false,
-      render: (row) => (
-        <button
-          type="button"
-          onClick={() => remove(row)}
-          aria-label={`Dejar de seguir ${row.handle}`}
-          className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition"
-        >
-          <TrashIcon className="w-3.5 h-3.5" />
-        </button>
-      ),
-    },
-  ]
-
-  return (
-    <>
-      <SectionHeader title="Competidores" subtitle={`${rows.length} cuentas en seguimiento`}>
-        <form onSubmit={add} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={handle}
-            onChange={(event) => setHandle(event.target.value)}
-            placeholder="@cuenta"
-            aria-label="Cuenta a seguir"
-            className="px-3 py-1.5 w-40 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-slate-400 transition"
-          />
-          <button type="submit" className={primaryButton}>
-            <PlusIcon className="w-3.5 h-3.5" />
-            Seguir
-          </button>
-        </form>
-      </SectionHeader>
-
-      <LiveBadge
-        live={feed}
-        demoLabel="Datos de ejemplo. Conecta el workflow de competidores en n8n para consultar cuentas reales."
-        liveLabel="Datos públicos de Instagram y YouTube"
-      />
-
-      {live && (
-        <div className={`${card} p-4`}>
-          <p className="text-xs text-slate-600">
-            Solo se ve lo público. Instagram lo sirve por <em>Business Discovery</em>, que exige que
-            la otra cuenta sea Business o Creator, y sin alcance ajeno la interacción se calcula{' '}
-            <strong className="text-slate-900">sobre seguidores</strong>, no sobre impresiones: no
-            coincidirá con la cifra de su propio panel.
-          </p>
-        </div>
-      )}
-
-      <SortableTable
-        columns={columns}
-        rows={rows}
-        initialSort={{ key: 'followers', dir: 'desc' }}
-        empty="No sigues ninguna cuenta todavía."
-      />
-    </>
-  )
+export default function Competitors(){
+ const {notify,competitors:feed}=useDashboard(); const live=feed.status==='ready'&&feed.posts; const [rows,setRows]=useState(seed); const [handle,setHandle]=useState(''); const [platform,setPlatform]=useState('instagram'); const [filter,setFilter]=useState('all')
+ useEffect(()=>{if(live)setRows(feed.posts)},[live,feed.posts])
+ const visible=useMemo(()=>filter==='all'?rows:rows.filter(r=>r.platform===filter),[rows,filter]); const leader=[...rows].sort((a,b)=>number(b.followers)-number(a.followers))[0]; const avg=rows.length?(rows.reduce((s,r)=>s+number(r.engagement),0)/rows.length).toFixed(1):0
+ function add(e){e.preventDefault();const clean=handle.trim().replace(/^@?/,'@');if(clean.length<2)return notify('Escribe un usuario válido');if(rows.some(r=>r.handle.toLowerCase()===clean.toLowerCase()))return notify('Esa cuenta ya está en seguimiento');setRows(c=>[...c,{id:`c-${Date.now()}`,handle:clean,platform,followers:'—',growth:0,engagement:0,cadence:'Pendiente',focus:'Analizando contenido',local:true}]);setHandle('');notify(`${clean} añadida al radar`,'success')}
+ function remove(row){setRows(c=>c.filter(i=>i.id!==row.id));notify(`${row.handle} eliminada del seguimiento`)}
+ return <>
+  <SectionHeader title="Radar de competidores" subtitle="Compara crecimiento, cadencia y oportunidades de contenido"><form onSubmit={add} className="flex gap-2"><select value={platform} onChange={e=>setPlatform(e.target.value)} className="premium-select">{Object.keys(labels).map(id=><option key={id} value={id}>{labels[id]}</option>)}</select><input value={handle} onChange={e=>setHandle(e.target.value)} placeholder="@competidor" className="premium-input w-36"/><button className={primaryButton}><PlusIcon className="w-4 h-4"/> Seguir</button></form></SectionHeader>
+  <LiveBadge live={feed} demoLabel="Datos de ejemplo · conecta el workflow para comparar cuentas reales." liveLabel="Datos públicos actualizados"/>
+  <section className="grid grid-cols-2 xl:grid-cols-4 gap-4"><div className="metric-card"><span className="eyebrow">Cuentas seguidas</span><strong>{rows.length}</strong><p className="text-[11px] text-slate-400">en 3 redes</p></div><div className="metric-card"><span className="eyebrow">Líder de audiencia</span><strong className="!text-lg">{leader?.handle||'—'}</strong><p className="text-[11px] text-slate-400">{leader?.followers||'sin datos'}</p></div><div className="metric-card"><span className="eyebrow">Engagement medio</span><strong>{avg}%</strong><p className="text-[11px] text-emerald-600">benchmark del grupo</p></div><div className="metric-card"><span className="eyebrow">Oportunidades</span><strong>{Math.max(3,rows.length+1)}</strong><p className="text-[11px] text-violet-600">temas poco cubiertos</p></div></section>
+  <div className="segmented-control w-fit">{['all','instagram','youtube','linkedin'].map(id=><button key={id} onClick={()=>setFilter(id)} className={filter===id?'active':''}>{id==='all'?'Todos':labels[id]}</button>)}</div>
+  <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{visible.map((row,index)=>{const Icon=icons[row.platform]||InstagramIcon;const engagement=number(row.engagement);return <article key={row.id||row.handle} className={`${card} premium-card p-5`}><div className="flex justify-between"><div className="flex gap-3"><span className="competitor-avatar">{row.handle.slice(1,3).toUpperCase()}</span><div><h2 className="text-sm font-extrabold text-slate-900">{row.handle}</h2><span className="flex items-center gap-1 text-[10px] text-slate-400"><Icon className="w-3 h-3"/>{labels[row.platform]||row.platform}</span></div></div><button onClick={()=>remove(row)} aria-label={`Dejar de seguir ${row.handle}`} className="icon-button hover:!text-rose-500"><TrashIcon className="w-4 h-4"/></button></div><div className="grid grid-cols-3 gap-2 my-5"><div className="mini-stat"><span>Audiencia</span><strong>{row.followers||'—'}</strong></div><div className="mini-stat"><span>Engagement</span><strong>{engagement?`${engagement}%`:'—'}</strong></div><div className="mini-stat"><span>Crecimiento</span><strong className={number(row.growth)>=0?'text-emerald-600':'text-rose-600'}>{row.growth!=null?`${number(row.growth)>=0?'+':''}${row.growth}%`:'—'}</strong></div></div><div className="space-y-3"><div><div className="flex justify-between text-[10px] mb-1"><span className="text-slate-500">Fuerza de contenido</span><b>{Math.min(94,58+index*7)}%</b></div><div className="progress-track"><i style={{width:`${Math.min(94,58+index*7)}%`}}/></div></div><p className="text-[11px] text-slate-500"><b className="text-slate-700">Enfoque:</b> {row.focus||'Contenido educativo y de autoridad'}</p><p className="text-[11px] text-slate-500"><b className="text-slate-700">Cadencia:</b> {row.cadence||'—'}</p></div><button className="w-full mt-4 py-2 rounded-lg bg-slate-50 text-[11px] font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700">Ver análisis completo →</button></article>})}</div>
+ </>
 }

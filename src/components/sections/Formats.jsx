@@ -71,6 +71,9 @@ function StoryCard({ sequence, onOpen, onToggle }) {
 export default function Formats({ onSchedule }) {
   const { notify } = useDashboard()
   const [plan, setPlan] = useLocalStorage('bitaxus.story-plan', [])
+  const [masters, setMasters] = useLocalStorage('bitaxus.master-texts', [])
+  const [masterText, setMasterText] = useState('')
+  const [masterTitle, setMasterTitle] = useState('')
   const [filter, setFilter] = useState('todos')
   const [platformFilter, setPlatformFilter] = useState('todos')
   const [editing, setEditing] = useState(null)
@@ -86,26 +89,37 @@ export default function Formats({ onSchedule }) {
   function update(id, patch) {
     setPlan((current) => current.map((item) => item.id === id ? { ...item, ...patch } : item))
   }
+  function saveMaster(event) {
+    event.preventDefault()
+    if (!masterText.trim()) return notify('Pega un texto maestro para continuar')
+    const title = masterTitle.trim() || masterText.trim().split(/\n|\.|\?|!/)[0].slice(0, 70)
+    setMasters((current) => [{ id: `master-${Date.now()}`, title, content: masterText.trim() }, ...current])
+    setMasterTitle(''); setMasterText(''); notify('Texto maestro guardado', 'success')
+  }
 
   return (
     <>
-      <SectionHeader title="Formatos" subtitle="Planifica, redacta y programa tus historias del mes">
+      <SectionHeader title="Biblioteca de formatos" subtitle="Guarda textos maestros y conviértelos en publicaciones para cada red">
         <button type="button" onClick={generate} className={primaryButton}>{plan.length ? 'Regenerar plan' : 'Crear 60 historias'}</button>
       </SectionHeader>
 
-      <section className={`${card} p-5 space-y-4`}>
+      <section className={`${card} master-workspace`}><form onSubmit={saveMaster} className="master-editor"><div><p className="eyebrow">01 · Texto maestro</p><h2 className="text-base font-extrabold text-slate-900 mt-1">Pega una pieza que represente tu voz</h2><p className="text-[11px] text-slate-500 mt-1">La usarás como base para crear versiones similares, no copias idénticas.</p></div><input value={masterTitle} onChange={e=>setMasterTitle(e.target.value)} placeholder="Nombre interno del texto" className="premium-input w-full"/><textarea value={masterText} onChange={e=>setMasterText(e.target.value)} rows="7" placeholder="Pega aquí tu post, guion, transcripción o copy maestro…" className="premium-input w-full resize-y leading-relaxed"/><button className={`${primaryButton} w-fit`}>Guardar texto maestro</button></form><div className="master-library"><div className="flex items-center justify-between"><div><p className="eyebrow">Biblioteca</p><h3 className="text-sm font-bold mt-1">{masters.length} textos guardados</h3></div></div>{masters.length===0?<div className="empty-master">Tus textos maestros aparecerán aquí.</div>:<div className="space-y-2">{masters.slice(0,4).map(item=><article key={item.id} className="master-item"><div><b>{item.title}</b><p>{item.content}</p></div><button onClick={()=>onSchedule({title:item.title,content:item.content,platform:'instagram'})}>Crear versión →</button></article>)}</div>}</div></section>
+
+      <div className="format-steps"><div className="active"><span>1</span><p><b>Elige la red</b><small>Filtra lo que necesitas</small></p></div><i/><div><span>2</span><p><b>Elige el formato</b><small>Según tu objetivo</small></p></div><i/><div><span>3</span><p><b>Programa</b><small>En un solo clic</small></p></div></div>
+
+      <section className={`${card} p-6 space-y-5`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-sm font-semibold text-slate-900">Todos los formatos</h2><p className="text-[11px] text-slate-500 mt-0.5">Elige uno y programa en un solo paso.</p></div>
-          <div className="flex gap-1.5 flex-wrap">
-            {['todos', ...Object.keys(postFormats)].map((platform) => <button key={platform} type="button" onClick={() => setPlatformFilter(platform)} className={`${ghostButton} ${platformFilter === platform ? 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 hover:text-white' : ''}`}>{platform === 'todos' ? 'Todos' : platform[0].toUpperCase() + platform.slice(1)}</button>)}
+          <div className="segmented-control">
+            {['todos', ...Object.keys(postFormats)].map((platform) => <button key={platform} type="button" onClick={() => setPlatformFilter(platform)} className={platformFilter === platform ? 'active' : ''}>{platform === 'todos' ? 'Todos' : platform[0].toUpperCase() + platform.slice(1)}</button>)}
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
           {Object.entries(postFormats).flatMap(([platform, formats]) => formats.map((format) => ({ platform, format }))).filter((item) => platformFilter === 'todos' || item.platform === platformFilter).map(({ platform, format }) => (
-            <button key={`${platform}-${format}`} type="button" onClick={() => onSchedule({ platform, format })} className="text-left rounded-lg border border-slate-200 p-3 hover:border-slate-400 hover:bg-slate-50 transition">
-              <div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-slate-900">{format}</span><span className="text-[9px] uppercase tracking-wide text-slate-400">{platform}</span></div>
+            <button key={`${platform}-${format}`} type="button" onClick={() => { const master=masters[0]; onSchedule({ platform, format, title:master?.title||'', content:master?.content||'' }) }} className={`format-card ${platform}`}>
+              <div className="format-icon">{format==='Reel'||format==='Short'||format==='Vídeo'||format==='Vídeo largo'?'▶':format==='Story'?'◉':format==='Carrusel'?'▦':format==='Directo'?'●':'✦'}</div><div className="flex items-center justify-between gap-2"><span className="text-xs font-bold text-slate-900">{format}</span><span className="text-[9px] uppercase tracking-wide text-slate-400">{platform}</span></div>
               <p className="text-[11px] text-slate-500 mt-1">{FORMAT_PURPOSE[format] ?? 'Contenido para tu audiencia'}</p>
-              <span className="block text-[10px] font-medium text-slate-700 mt-2">Programar →</span>
+              <span className="block text-[10px] font-bold text-violet-600 mt-3">Usar formato →</span>
             </button>
           ))}
         </div>

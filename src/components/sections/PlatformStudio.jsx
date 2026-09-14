@@ -114,6 +114,10 @@ export default function PlatformStudio({ id, onSchedule }) {
         </button>
       </SectionHeader>
 
+      {id === 'youtube' && (
+        <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
+      )}
+
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         {kpis.map(({ id: kpiId, label, value, delta, trend, caption, icon, live: isLive }) => {
           const Icon = iconsById[icon]
@@ -148,7 +152,9 @@ export default function PlatformStudio({ id, onSchedule }) {
         })}
       </section>
 
-      <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
+      {id !== 'youtube' && (
+        <PlatformNews platform={id} label={platform.label} onOpenAll={() => setSection('noticias')} />
+      )}
 
       {recentPosts?.length > 0 && (
         <div className={`${card} p-5 space-y-4`}>
