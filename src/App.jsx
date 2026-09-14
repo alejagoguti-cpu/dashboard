@@ -3,7 +3,6 @@ import AccountModals from './components/AccountModals.jsx'
 import ContentTools from './components/ContentTools.jsx'
 import FeedPlanner from './components/FeedPlanner.jsx'
 import Header from './components/Header.jsx'
-import KpiCards from './components/KpiCards.jsx'
 import LoggedOut from './components/LoggedOut.jsx'
 import ScheduleModal from './components/ScheduleModal.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -25,7 +24,6 @@ function InstagramStudio({ onSchedule }) {
   return (
     <>
       <Header onSchedule={onSchedule} />
-      <KpiCards />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-7 space-y-6">
