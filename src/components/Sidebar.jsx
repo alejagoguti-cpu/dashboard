@@ -68,11 +68,11 @@ function NavLink({ id, label, Icon, onNavigate }) {
       aria-current={active ? 'page' : undefined}
       className={
         active
-          ? 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 text-white font-semibold border border-violet-400/20 shadow-[inset_3px_0_0_#8b5cf6]'
+          ? 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-red-700/20 to-red-600/10 text-white font-semibold border border-red-600/20 shadow-[inset_3px_0_0_#b91c1c]'
           : 'w-full flex items-center gap-3 px-3 py-2.5 text-[#94a3b8] hover:text-white hover:bg-white/[.055] rounded-xl transition-all group'
       }
     >
-      <span className={active ? 'w-7 h-7 rounded-lg grid place-items-center bg-violet-500 text-white shadow-lg shadow-violet-950/30' : 'w-7 h-7 rounded-lg grid place-items-center bg-white/[.035] text-[#64748b] group-hover:text-white'}><Icon className="w-3.5 h-3.5" /></span>
+      <span className={active ? 'w-7 h-7 rounded-lg grid place-items-center bg-red-700 text-white shadow-lg shadow-red-950/30' : 'w-7 h-7 rounded-lg grid place-items-center bg-white/[.035] text-[#64748b] group-hover:text-white'}><Icon className="w-3.5 h-3.5" /></span>
       <span>{label}</span>
     </button>
   )
@@ -116,7 +116,7 @@ function UserMenu({ onAction }) {
         className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#161920] transition text-left group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full ring-2 ring-brand-rose/70 overflow-hidden bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 p-[1.5px]">
+          <div className="w-8 h-8 rounded-full ring-2 ring-red-700/70 overflow-hidden bg-gradient-to-tr from-amber-500 via-rose-500 to-red-700 p-[1.5px]">
             <img
               src={account.avatar}
               alt={`Avatar de ${account.name}`}
@@ -155,7 +155,7 @@ export default function Sidebar({ onAccountAction, open, onClose }) {
       >
       <div className="flex flex-col flex-1 overflow-y-auto pt-6 px-4">
         <div className="px-3 mb-8">
-          <div className="flex items-center gap-2.5"><span className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white grid place-items-center font-black shadow-lg shadow-violet-950">B</span><div><span className="block text-white text-sm tracking-[0.18em] font-extrabold uppercase">BITAXUS</span><span className="block text-[9px] text-slate-500 tracking-widest mt-0.5">CONTENT OS</span></div></div>
+          <div className="flex items-center gap-2.5"><span className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-700 to-red-600 text-white grid place-items-center font-black shadow-lg shadow-red-950">B</span><div><span className="block text-white text-sm tracking-[0.18em] font-extrabold uppercase">BITAXUS</span><span className="block text-[9px] text-slate-500 tracking-widest mt-0.5">CONTENT OS</span></div></div>
         </div>
 
         <nav className="space-y-6 text-[13px] font-medium">
