@@ -51,7 +51,7 @@ function Section({ id, onSchedule }) {
       return <Home onSchedule={onSchedule} />
     case 'temas':
       return <Topics onSchedule={onSchedule} />
-    case 'youtube':
+    case 'twitter':
     case 'linkedin':
     case 'facebook':
       return <PlatformStudio id={id} onSchedule={onSchedule} />

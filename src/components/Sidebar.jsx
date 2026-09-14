@@ -10,7 +10,7 @@ import {
   InstagramIcon,
   LinkedInIcon,
   UsersIcon,
-  YouTubeIcon,
+  TwitterIcon,
   FacebookIcon,
 } from './icons.jsx'
 
@@ -32,7 +32,7 @@ export const sections = [
     title: 'Crear',
     items: [
       { id: 'facebook', label: 'Facebook', Icon: FacebookIcon },
-      { id: 'youtube', label: 'YouTube', Icon: YouTubeIcon },
+      { id: 'twitter', label: 'Twitter', Icon: TwitterIcon },
       { id: 'instagram', label: 'Instagram', Icon: InstagramIcon },
       { id: 'linkedin', label: 'LinkedIn', Icon: LinkedInIcon },
     ],

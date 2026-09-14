@@ -143,6 +143,13 @@ export const YouTubeIcon = (p) => (
   />
 )
 
+export const TwitterIcon = (p) => (
+  <Solid
+    {...p}
+    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.694l-5.232-6.84L2.846 21.75H-.428l7.723-8.835L0 2.25h6.882l4.791 6.335L15.896 2.25h2.348zM17.009 18.744h1.832L6.28 3.94H4.286l12.723 14.804z"
+  />
+)
+
 export const InstagramIcon = (p) => (
   <Solid
     {...p}
