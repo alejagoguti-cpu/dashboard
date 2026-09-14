@@ -254,6 +254,19 @@ export function DashboardProvider({ children }) {
     [setPosts, notify],
   )
 
+  const updatePostStage = useCallback(
+    (id, stage) => {
+      setPosts((current) =>
+        current.map((post) =>
+          post.id === id ? { ...post, stage } : post
+        ),
+      )
+      const labels = { ideas: 'Ideas', production: 'En producción', review: 'En revisión', scheduled: 'Programado' }
+      notify(`Movido a ${labels[stage] || stage}`)
+    },
+    [setPosts, notify],
+  )
+
   const updateSlot = useCallback(
     (id, updates) => {
       setSlots((current) =>
@@ -293,6 +306,7 @@ export function DashboardProvider({ children }) {
       addPost,
       removePost,
       updatePost,
+      updatePostStage,
       toasts,
       notify,
       dismissToast,
@@ -328,6 +342,7 @@ export function DashboardProvider({ children }) {
       addPost,
       removePost,
       updatePost,
+      updatePostStage,
       toasts,
       notify,
       dismissToast,

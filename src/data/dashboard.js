@@ -111,6 +111,7 @@ export const initialScheduledPosts = [
     format: 'Reel',
     title: '3 errores al escalar tu oferta high-ticket',
     score: 94,
+    stage: 'scheduled',
   },
   {
     id: 'post-jueves',
@@ -119,6 +120,7 @@ export const initialScheduledPosts = [
     format: 'Carrusel',
     title: 'Cómo cerrar ventas por DM sin sonar invasivo',
     score: 88,
+    stage: 'review',
   },
   {
     id: 'tw-post-1',
@@ -129,6 +131,7 @@ export const initialScheduledPosts = [
     content: 'En Twitter el primer párrafo decide todo. Aquí está el gancho de nuestro thread más guardado.',
     hashtags: '#Twitter #ContentMarketing',
     score: 92,
+    stage: 'production',
   },
   {
     id: 'fb-post-1',
@@ -139,6 +142,7 @@ export const initialScheduledPosts = [
     content: 'Un sistema simple para publicar sin empezar desde cero. Una buena idea no se publica una sola vez.',
     hashtags: '#Facebook #ContentStrategy',
     score: 85,
+    stage: 'ideas',
   },
   {
     id: 'li-post-1',
@@ -149,6 +153,7 @@ export const initialScheduledPosts = [
     content: 'Durante meses celebramos impresiones. El problema es que una impresión no te dice qué cambió en la cabeza del comprador.',
     hashtags: '#LinkedIn #B2B',
     score: 88,
+    stage: 'production',
   },
 ]
 

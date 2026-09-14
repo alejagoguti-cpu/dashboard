@@ -4,8 +4,15 @@ import { PlusIcon, CloseIcon } from '../icons.jsx'
 import SectionHeader, { card, primaryButton } from './SectionHeader.jsx'
 import LinkedInFeedPlanner from '../LinkedInFeedPlanner.jsx'
 
+const stageLabels = {
+  ideas: 'Ideas',
+  production: 'En producción',
+  review: 'En revisión',
+  scheduled: 'Programado',
+}
+
 export default function LinkedInStudio({ onSchedule }) {
-  const { posts, removePost } = useDashboard()
+  const { posts, removePost, updatePostStage } = useDashboard()
 
   const queue = posts
     .filter((post) => post.platform === 'linkedin')
@@ -72,14 +79,25 @@ export default function LinkedInStudio({ onSchedule }) {
                       </div>
                       <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{post.title}</p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removePost(post.id)}
-                      aria-label={`Cancelar ${post.title}`}
-                      className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
-                    >
-                      <CloseIcon className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <select
+                        value={post.stage || 'scheduled'}
+                        onChange={(e) => updatePostStage(post.id, e.target.value)}
+                        className="text-[10px] font-medium bg-white border border-slate-200 text-slate-700 px-2 py-0.5 rounded hover:border-slate-300 transition cursor-pointer"
+                      >
+                        {Object.entries(stageLabels).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => removePost(post.id)}
+                        aria-label={`Cancelar ${post.title}`}
+                        className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition"
+                      >
+                        <CloseIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
