@@ -13,7 +13,9 @@ import Analytics from './components/sections/Analytics.jsx'
 import CalendarMonth from './components/sections/CalendarMonth.jsx'
 import Competitors from './components/sections/Competitors.jsx'
 import Home from './components/sections/Home.jsx'
-import PlatformStudio from './components/sections/PlatformStudio.jsx'
+import TwitterStudio from './components/sections/TwitterStudio.jsx'
+import LinkedInStudio from './components/sections/LinkedInStudio.jsx'
+import FacebookStudio from './components/sections/FacebookStudio.jsx'
 import Topics from './components/sections/Topics.jsx'
 import Toasts from './components/ui/Toasts.jsx'
 import { DashboardProvider, useDashboard } from './state/DashboardContext.jsx'
@@ -50,9 +52,11 @@ function Section({ id, onSchedule }) {
     case 'temas':
       return <Topics onSchedule={onSchedule} />
     case 'twitter':
+      return <TwitterStudio onSchedule={onSchedule} />
     case 'linkedin':
+      return <LinkedInStudio onSchedule={onSchedule} />
     case 'facebook':
-      return <PlatformStudio id={id} onSchedule={onSchedule} />
+      return <FacebookStudio onSchedule={onSchedule} />
     case 'analiticas':
       return <Analytics />
     case 'calendario':
