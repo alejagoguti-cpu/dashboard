@@ -148,10 +148,20 @@ export default function FacebookFeedPlanner({ onSchedule }) {
 
       <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
         {facebookPosts.length === 0 ? (
-          <div className="p-6 text-center">
-            <p className="text-xs text-slate-500 mb-3">Las publicaciones que programes aparecerán aquí</p>
-            <UploadCell onFiles={handleFiles} />
-          </div>
+          <>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-3 bg-slate-50/70 border border-slate-100 rounded-lg animate-pulse">
+                  <div className="h-3 bg-slate-200 rounded w-32 mb-2"></div>
+                  <div className="h-2 bg-slate-200 rounded w-full mb-1"></div>
+                  <div className="h-2 bg-slate-200 rounded w-3/4"></div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-2">
+              <UploadCell onFiles={handleFiles} />
+            </div>
+          </>
         ) : (
           <>
             {facebookPosts.map((post) => (
