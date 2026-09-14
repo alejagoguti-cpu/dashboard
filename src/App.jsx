@@ -100,7 +100,7 @@ function Dashboard() {
       />
 
       <main className="flex-1 overflow-y-auto dashboard-surface min-w-0 lg:ml-64">
-        <div className="max-w-[1520px] mx-auto p-4 sm:p-8 space-y-6">
+        <div className="w-full p-4 sm:p-6 xl:p-8 space-y-6">
           {/* La barra lateral se oculta en pantallas estrechas. */}
           <button
             type="button"
