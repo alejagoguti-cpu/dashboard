@@ -142,7 +142,6 @@ export const postFormats = {
 export const platforms = {
   instagram: { id: 'instagram', label: 'Instagram', handle: '@bitaxus', audience: '128K seguidores' },
   facebook: { id: 'facebook', label: 'Facebook', handle: 'Bitaxus', audience: '86.4K seguidores' },
-  youtube: { id: 'youtube', label: 'YouTube', handle: '@bitaxus', audience: '41.2K suscriptores' },
   linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'company/bitaxus', audience: '23.8K contactos' },
   twitter: { id: 'twitter', label: 'Twitter', handle: '@bitaxus', audience: '52.3K seguidores' },
 }
