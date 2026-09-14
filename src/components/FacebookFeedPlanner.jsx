@@ -96,9 +96,11 @@ function UploadCell({ onFiles }) {
 }
 
 export default function FacebookFeedPlanner({ onSchedule }) {
-  const { posts, preview, setPreview, account } = useDashboard()
+  const { posts, preview, setPreview, account, notify } = useDashboard()
   const [detail, setDetail] = useState(null)
   const [dragId, setDragId] = useState(null)
+  const [editMode, setEditMode] = useState(false)
+  const [driveLink, setDriveLink] = useState('')
 
   const facebookPosts = useMemo(() => {
     return posts
@@ -185,6 +187,114 @@ export default function FacebookFeedPlanner({ onSchedule }) {
           </p>
         )}
       </div>
+
+      <Modal
+        open={Boolean(detail)}
+        onClose={() => {
+          setDetail(null)
+          setEditMode(false)
+          setDriveLink('')
+        }}
+        title={editMode ? 'Editar publicación' : detail?.title || 'Detalles'}
+        subtitle={editMode ? 'Pega el link de Google Drive para previsualizar' : 'Publicación de Facebook'}
+        footer={
+          editMode ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false)
+                  setDriveLink('')
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (driveLink) {
+                    const fileId = driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]
+                    if (fileId) {
+                      const previewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+                      notify('Imagen actualizada desde Drive')
+                      setEditMode(false)
+                      setDriveLink('')
+                    } else {
+                      notify('Link de Drive inválido')
+                    }
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg transition"
+              >
+                Guardar preview
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditMode(true)}
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Editar imagen
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetail(null)}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg transition"
+              >
+                Cerrar
+              </button>
+            </>
+          )
+        }
+      >
+        {detail && (
+          editMode ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Link de Google Drive
+                </label>
+                <input
+                  type="text"
+                  value={driveLink}
+                  onChange={(e) => setDriveLink(e.target.value)}
+                  placeholder="https://drive.google.com/file/d/ARCHIVO_ID/view"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Copia el link compartible de Drive (debe estar públicamente accesible)
+                </p>
+              </div>
+              {driveLink && (
+                <div className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 p-3">
+                  <p className="text-[11px] font-semibold text-slate-600 mb-2">Vista previa:</p>
+                  <img
+                    src={`https://drive.google.com/uc?export=view&id=${driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]}`}
+                    alt="Preview"
+                    className="w-full rounded object-cover max-h-48"
+                    onError={() => notify('No se pudo cargar la imagen del Drive')}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <img
+                src={detail.image}
+                alt={detail.title}
+                className="w-full rounded-lg object-cover max-h-64 bg-slate-900 mb-3"
+              />
+              <p className="text-xs text-slate-600">
+                <span className="text-slate-400">Publicación de: </span>
+                {detail.title}
+              </p>
+            </div>
+          )
+        )}
+      </Modal>
     </div>
   )
 }
