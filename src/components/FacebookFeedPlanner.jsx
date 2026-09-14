@@ -96,11 +96,12 @@ function UploadCell({ onFiles }) {
 }
 
 export default function FacebookFeedPlanner({ onSchedule }) {
-  const { posts, preview, setPreview, account, notify } = useDashboard()
+  const { posts, preview, setPreview, account, notify, updatePost } = useDashboard()
   const [detail, setDetail] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [editMode, setEditMode] = useState(false)
   const [driveLink, setDriveLink] = useState('')
+  const [editedPost, setEditedPost] = useState(null)
 
   const facebookPosts = useMemo(() => {
     return posts
@@ -194,9 +195,10 @@ export default function FacebookFeedPlanner({ onSchedule }) {
           setDetail(null)
           setEditMode(false)
           setDriveLink('')
+          setEditedPost(null)
         }}
         title={editMode ? 'Editar publicación' : detail?.title || 'Detalles'}
-        subtitle={editMode ? 'Pega el link de Google Drive para previsualizar' : 'Publicación de Facebook'}
+        subtitle={editMode ? 'Edita todos los campos de tu publicación' : 'Publicación de Facebook'}
         footer={
           editMode ? (
             <>
@@ -205,6 +207,7 @@ export default function FacebookFeedPlanner({ onSchedule }) {
                 onClick={() => {
                   setEditMode(false)
                   setDriveLink('')
+                  setEditedPost(null)
                 }}
                 className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
               >
@@ -213,31 +216,31 @@ export default function FacebookFeedPlanner({ onSchedule }) {
               <button
                 type="button"
                 onClick={() => {
-                  if (driveLink) {
-                    const fileId = driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]
-                    if (fileId) {
-                      const previewUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-                      notify('Imagen actualizada desde Drive')
-                      setEditMode(false)
-                      setDriveLink('')
-                    } else {
-                      notify('Link de Drive inválido')
-                    }
+                  if (editedPost && detail) {
+                    updatePost(detail.id, editedPost)
+                    setEditMode(false)
+                    setDriveLink('')
+                    setEditedPost(null)
+                    setDetail(null)
+                    notify('Publicación actualizada')
                   }
                 }}
                 className="px-3 py-1.5 text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg transition"
               >
-                Guardar preview
+                Guardar cambios
               </button>
             </>
           ) : (
             <>
               <button
                 type="button"
-                onClick={() => setEditMode(true)}
+                onClick={() => {
+                  setEditMode(true)
+                  setEditedPost(detail)
+                }}
                 className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
               >
-                Editar imagen
+                Editar
               </button>
               <button
                 type="button"
@@ -255,30 +258,37 @@ export default function FacebookFeedPlanner({ onSchedule }) {
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Link de Google Drive
+                  Título
                 </label>
                 <input
                   type="text"
-                  value={driveLink}
-                  onChange={(e) => setDriveLink(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/ARCHIVO_ID/view"
+                  value={editedPost?.title || ''}
+                  onChange={(e) => setEditedPost({ ...editedPost, title: e.target.value })}
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-600"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Copia el link compartible de Drive (debe estar públicamente accesible)
-                </p>
               </div>
-              {driveLink && (
-                <div className="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 p-3">
-                  <p className="text-[11px] font-semibold text-slate-600 mb-2">Vista previa:</p>
-                  <img
-                    src={`https://drive.google.com/uc?export=view&id=${driveLink.match(/\/d\/([a-zA-Z0-9-_]+)/)?.[1]}`}
-                    alt="Preview"
-                    className="w-full rounded object-cover max-h-48"
-                    onError={() => notify('No se pudo cargar la imagen del Drive')}
-                  />
-                </div>
-              )}
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Contenido
+                </label>
+                <textarea
+                  value={editedPost?.content || ''}
+                  onChange={(e) => setEditedPost({ ...editedPost, content: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                  rows={4}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Fecha y hora
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editedPost?.at || ''}
+                  onChange={(e) => setEditedPost({ ...editedPost, at: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                />
+              </div>
             </div>
           ) : (
             <div>

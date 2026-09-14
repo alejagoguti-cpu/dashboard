@@ -120,6 +120,36 @@ export const initialScheduledPosts = [
     title: 'Cómo cerrar ventas por DM sin sonar invasivo',
     score: 88,
   },
+  {
+    id: 'tw-post-1',
+    at: inDays(1, '14:00'),
+    platform: 'twitter',
+    format: 'Hilo',
+    title: 'El gancho que detiene el scroll',
+    content: 'En Twitter el primer párrafo decide todo. Aquí está el gancho de nuestro thread más guardado.',
+    hashtags: '#Twitter #ContentMarketing',
+    score: 92,
+  },
+  {
+    id: 'fb-post-1',
+    at: inDays(2, '15:30'),
+    platform: 'facebook',
+    format: 'Reel',
+    title: 'Cómo convertir una idea en una semana de contenido',
+    content: 'Un sistema simple para publicar sin empezar desde cero. Una buena idea no se publica una sola vez.',
+    hashtags: '#Facebook #ContentStrategy',
+    score: 85,
+  },
+  {
+    id: 'li-post-1',
+    at: inDays(3, '09:00'),
+    platform: 'linkedin',
+    format: 'Artículo',
+    title: 'Dejamos de medir publicaciones y empezamos a medir decisiones',
+    content: 'Durante meses celebramos impresiones. El problema es que una impresión no te dice qué cambió en la cabeza del comprador.',
+    hashtags: '#LinkedIn #B2B',
+    score: 88,
+  },
 ]
 
 export const freeSlot = {

@@ -242,6 +242,30 @@ export function DashboardProvider({ children }) {
     [setPosts, notify, connected],
   )
 
+  const updatePost = useCallback(
+    (id, updates) => {
+      setPosts((current) =>
+        current.map((post) =>
+          post.id === id ? { ...post, ...updates } : post
+        ),
+      )
+      notify('Publicación actualizada')
+    },
+    [setPosts, notify],
+  )
+
+  const updateSlot = useCallback(
+    (id, updates) => {
+      setSlots((current) =>
+        current.map((slot) =>
+          slot.id === id ? { ...slot, ...updates } : slot
+        ),
+      )
+      setDirty(true)
+    },
+    [setDirty],
+  )
+
   const value = useMemo(
     () => ({
       section,
@@ -261,12 +285,14 @@ export function DashboardProvider({ children }) {
       moveSlot,
       addSlot,
       removeSlot,
+      updateSlot,
       dirty,
       saveOrder,
       resetOrder,
       posts,
       addPost,
       removePost,
+      updatePost,
       toasts,
       notify,
       dismissToast,
@@ -294,12 +320,14 @@ export function DashboardProvider({ children }) {
       moveSlot,
       addSlot,
       removeSlot,
+      updateSlot,
       dirty,
       saveOrder,
       resetOrder,
       posts,
       addPost,
       removePost,
+      updatePost,
       toasts,
       notify,
       dismissToast,
