@@ -132,6 +132,7 @@ export const postingWindow = '19:00 - 21:30'
 /** Formatos disponibles por plataforma en el diálogo de programación. */
 export const postFormats = {
   instagram: ['Reel', 'Carrusel', 'Imagen', 'Story'],
+  facebook: ['Reel', 'Carrusel', 'Imagen', 'Story', 'Texto'],
   youtube: ['Vídeo largo', 'Short', 'Directo'],
   linkedin: ['Artículo', 'Carrusel', 'Texto', 'Vídeo'],
 }
@@ -139,12 +140,19 @@ export const postFormats = {
 /** Metadatos de cada estudio de creación. */
 export const platforms = {
   instagram: { id: 'instagram', label: 'Instagram', handle: '@bitaxus', audience: '128K seguidores' },
+  facebook: { id: 'facebook', label: 'Facebook', handle: 'Bitaxus', audience: '86.4K seguidores' },
   youtube: { id: 'youtube', label: 'YouTube', handle: '@bitaxus', audience: '41.2K suscriptores' },
   linkedin: { id: 'linkedin', label: 'LinkedIn', handle: 'company/bitaxus', audience: '23.8K contactos' },
 }
 
 /** KPIs por plataforma para los estudios de YouTube y LinkedIn. */
 export const platformKpis = {
+  facebook: [
+    { id: 'alcance', label: 'Alcance', value: '196.8K', delta: '+19.4%', trend: 'up', caption: 'vs mes anterior', icon: 'eye' },
+    { id: 'interaccion', label: 'Interacción', value: '5.4%', delta: '+0.8%', trend: 'up', caption: 'sobre promedio', icon: 'heart' },
+    { id: 'seguidores', label: 'Seguidores', value: '+1,260', delta: '+8.2%', trend: 'up', caption: 'orgánico', icon: 'userPlus' },
+    { id: 'clicks', label: 'Clicks', value: '2,184', caption: '10.1% conversión', icon: 'link' },
+  ],
   youtube: [
     { id: 'vistas', label: 'Vistas', value: '218.7K', delta: '+16.4%', trend: 'up', caption: 'vs mes anterior', icon: 'eye' },
     { id: 'retencion', label: 'Retención media', value: '42.1%', delta: '+2.3%', trend: 'up', caption: 'sobre promedio', icon: 'heart' },
@@ -165,6 +173,10 @@ export const platformKpis = {
  * devuelven los workflows de YouTube y LinkedIn.
  */
 export const platformRecentPosts = {
+  facebook: [
+    { id:'fb-demo-1', title:'Cómo convertir una idea en una semana de contenido', excerpt:'Un sistema simple para publicar sin empezar desde cero.', image:media.frameworkContenido, kind:'image', metrics:[{label:'Alcance',value:'34.8K'},{label:'Interacción',value:'6.1%'},{label:'Compartidos',value:'428'}], content:'Una buena idea no se publica una sola vez: se convierte en historia, reel, carrusel y conversación.', hook:'Deja de gastar tus mejores ideas en una sola publicación.', structure:'Problema → método → ejemplos → acción', cta:'Guarda este sistema para tu próxima semana.', why:'Promesa clara y aplicable.', adaptedScript:'Toma tu idea más fuerte y conviértela en cinco piezas, cada una con un trabajo distinto.' },
+    { id:'fb-demo-2', title:'El error de medir solo el alcance', excerpt:'Las métricas deben ayudar a tomar decisiones.', image:media.casoEstudio, kind:'image', metrics:[{label:'Alcance',value:'28.2K'},{label:'Interacción',value:'5.7%'},{label:'Comentarios',value:'196'}], content:'El alcance cuenta cuántas personas vieron. La intención cuenta cuántas avanzaron.', hook:'Más alcance no siempre significa más negocio.', structure:'Contraste → explicación → diagnóstico', cta:'Revisa qué acción provocó tu último post.', why:'Cuestiona una métrica popular.', adaptedScript:'No celebres una vista sin saber qué decisión produjo.' },
+  ],
   youtube: [
     {
       id: 'yt-demo-1',
