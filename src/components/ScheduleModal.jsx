@@ -17,6 +17,7 @@ export default function ScheduleModal({ draft, onClose }) {
   const sending = busy === 'addPost'
 
   const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
   const [platform, setPlatform] = useState('instagram')
   const [format, setFormat] = useState(postFormats.instagram[0])
   const [date, setDate] = useState('')
@@ -31,6 +32,7 @@ export default function ScheduleModal({ draft, onClose }) {
     const target = draft.platform ?? 'instagram'
 
     setTitle(draft.title ?? '')
+    setContent(draft.content ?? '')
     setPlatform(target)
     setFormat(draft.format ?? postFormats[target][0])
     setDate(toDateInput(initial))
@@ -59,6 +61,7 @@ export default function ScheduleModal({ draft, onClose }) {
       platform,
       format,
       title: title.trim(),
+      content: content.trim(),
       // Las franjas de 19:00 a 21:30 rinden mejor según los datos del panel.
       score: at.getHours() >= 19 && at.getHours() <= 21 ? 92 : 74,
     })
@@ -106,6 +109,20 @@ export default function ScheduleModal({ draft, onClose }) {
             placeholder="Ej. 3 errores al escalar tu oferta"
             className={field}
             autoFocus
+          />
+        </div>
+
+        <div>
+          <label htmlFor="schedule-content" className="block text-[11px] font-medium text-slate-500 mb-1.5">
+            Contenido
+          </label>
+          <textarea
+            id="schedule-content"
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder="Escribe o pega aquí el guion de la publicación"
+            rows="4"
+            className={`${field} resize-y leading-relaxed`}
           />
         </div>
 
