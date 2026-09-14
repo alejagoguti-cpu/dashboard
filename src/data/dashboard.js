@@ -160,6 +160,134 @@ export const platformKpis = {
 }
 
 /**
+ * Contenido de respaldo para que los estudios no queden vacíos mientras no se
+ * hayan conectado las APIs. Las mismas tarjetas aceptan después la forma que
+ * devuelven los workflows de YouTube y LinkedIn.
+ */
+export const platformRecentPosts = {
+  youtube: [
+    {
+      id: 'yt-demo-1',
+      title: 'El sistema de contenido que reemplaza una agencia',
+      excerpt: 'Cómo convertir métricas y transcripciones en nuevas ideas de contenido.',
+      image: media.casoEstudio,
+      kind: 'video',
+      duration: '9:42',
+      permalink: 'https://www.youtube.com/',
+      metrics: [
+        { label: 'Vistas', value: '48.2K' },
+        { label: 'Retención', value: '52%' },
+        { label: 'Guardados', value: '1.4K' },
+      ],
+      transcript: 'La mayoría crea contenido mirando solo las vistas. El salto ocurre cuando también analizas el mensaje: el gancho, la estructura, la llamada a la acción y el motivo por el que una idea retuvo a la audiencia.',
+      hook: 'La mayoría crea contenido mirando la métrica equivocada.',
+      structure: 'Problema → nueva forma de analizar → demostración → siguiente paso.',
+      cta: 'Guarda este video y analiza tu próxima pieza con esta estructura.',
+      why: 'Abre una brecha de curiosidad y promete una mejora concreta antes de explicar el método.',
+      adaptedScript: 'Tus vistas no explican por qué funcionó un video. Empieza por el gancho, sigue con la promesa que mantuvo la atención y termina con la acción que tomó la audiencia. Cuando guardas esa estructura, una sola pieza se convierte en cinco ángulos nuevos para tu marca.',
+    },
+    {
+      id: 'yt-demo-2',
+      title: '5 ángulos para vender una oferta sin bajar el precio',
+      excerpt: 'Un método práctico para multiplicar un concepto sin repetir el mismo video.',
+      image: media.estrategiasDigitales,
+      kind: 'video',
+      duration: '12:18',
+      permalink: 'https://www.youtube.com/',
+      metrics: [
+        { label: 'Vistas', value: '31.7K' },
+        { label: 'Retención', value: '47%' },
+        { label: 'Comentarios', value: '386' },
+      ],
+      transcript: 'Una oferta puede explicarse desde el coste de no actuar, el error común, el caso de un cliente, la objeción principal y el cambio de identidad que busca el comprador.',
+      hook: 'No necesitas cinco ideas: necesitas cinco ángulos de la misma idea.',
+      structure: 'Tesis → lista de cinco ángulos → ejemplo → reto práctico.',
+      cta: 'Elige un ángulo y publícalo esta semana.',
+      why: 'Reduce la presión de inventar y entrega una lista accionable que invita a guardar el video.',
+      adaptedScript: 'Toma tu mejor idea y no la abandones después de publicarla. Cuéntala como error, como caso, como objeción, como coste de esperar y como transformación. Así conviertes un concepto probado en una semana completa de contenido.',
+    },
+    {
+      id: 'yt-demo-3',
+      title: 'El embudo B2B explicado en 8 minutos',
+      excerpt: 'De una publicación a una conversación comercial medible.',
+      image: media.embudoB2B,
+      kind: 'video',
+      duration: '8:06',
+      permalink: 'https://www.youtube.com/',
+      metrics: [
+        { label: 'Vistas', value: '22.4K' },
+        { label: 'Retención', value: '44%' },
+        { label: 'Suscriptores', value: '+410' },
+      ],
+      transcript: 'Cada publicación debe tener un trabajo: atraer a la persona correcta, demostrar que entiendes su problema o moverla hacia una conversación.',
+      hook: 'Si todo tu contenido intenta vender, nada de tu contenido vende.',
+      structure: 'Contradicción → tres etapas → ejemplo → diagnóstico.',
+      cta: 'Clasifica tus últimas diez publicaciones en estas tres etapas.',
+      why: 'Cuestiona una práctica habitual y ofrece un marco fácil de aplicar de inmediato.',
+      adaptedScript: 'Tu calendario no necesita más publicaciones, necesita intención. Decide cuáles atraen, cuáles generan confianza y cuáles abren una conversación. Si una pieza no cumple ninguna función, no debería ocupar un espacio.',
+    },
+  ],
+  linkedin: [
+    {
+      id: 'li-demo-1',
+      title: 'Dejamos de medir publicaciones y empezamos a medir decisiones',
+      excerpt: 'Durante meses celebramos impresiones. El problema es que una impresión no te dice qué cambió en la cabeza del comprador. Ahora cada publicación tiene una hipótesis, una señal de intención y un siguiente paso medible.',
+      content: 'Durante meses celebramos impresiones.\n\nEl problema es que una impresión no te dice qué cambió en la cabeza del comprador.\n\nAhora cada publicación tiene tres cosas:\n1. Una hipótesis clara.\n2. Una señal de intención.\n3. Un siguiente paso medible.\n\nMenos contenido para alimentar el calendario. Más contenido que ayuda a tomar una decisión.',
+      image: media.frameworkContenido,
+      kind: 'text',
+      permalink: 'https://www.linkedin.com/',
+      metrics: [
+        { label: 'Impresiones', value: '38.6K' },
+        { label: 'Interacción', value: '7.2%' },
+        { label: 'Comentarios', value: '94' },
+      ],
+      hook: 'Dejamos de medir publicaciones y empezamos a medir decisiones.',
+      structure: 'Confesión → problema → marco de tres pasos → contraste final.',
+      cta: 'Revisa si tu última publicación tenía un siguiente paso medible.',
+      why: 'La confesión genera credibilidad y el marco numerado hace que la idea sea fácil de recordar.',
+      adaptedScript: 'No midas tu próxima publicación solo por alcance. Define qué idea debe entender el lector, qué señal probará que le importó y qué acción puede tomar después. Esa es la diferencia entre publicar y construir demanda.',
+    },
+    {
+      id: 'li-demo-2',
+      title: 'El coste invisible de crear contenido desde cero',
+      excerpt: 'La mayoría de equipos no tiene un problema de creatividad. Tiene un problema de memoria: cada semana olvida qué ganchos, objeciones y ejemplos ya demostraron que funcionan.',
+      content: 'La mayoría de equipos no tiene un problema de creatividad.\n\nTiene un problema de memoria.\n\nCada semana olvida qué ganchos funcionaron, qué objeciones abrieron conversaciones y qué ejemplos retuvieron a la audiencia.\n\nUna biblioteca de transcripciones bien analizada vale más que cien ideas sueltas.',
+      kind: 'text',
+      permalink: 'https://www.linkedin.com/',
+      metrics: [
+        { label: 'Impresiones', value: '26.1K' },
+        { label: 'Interacción', value: '6.8%' },
+        { label: 'Guardados', value: '612' },
+      ],
+      hook: 'Tu equipo no tiene un problema de creatividad. Tiene un problema de memoria.',
+      structure: 'Reencuadre → evidencia → consecuencia → nueva solución.',
+      cta: 'Empieza una biblioteca con tus cinco mejores piezas.',
+      why: 'El contraste sorprende y da nombre a un problema que muchos equipos sienten pero no articulan.',
+      adaptedScript: 'Antes de pedir otra lluvia de ideas, revisa lo que ya funcionó. Extrae el gancho, la objeción y el ejemplo de tus mejores piezas. La creatividad escala cuando deja de empezar desde cero.',
+    },
+    {
+      id: 'li-demo-3',
+      title: 'Una idea, cinco piezas, una sola tesis',
+      excerpt: 'Repetir una tesis no significa duplicar una publicación. Significa demostrarla con un caso, una lista, una historia, una objeción y una guía.',
+      content: 'Repetir una tesis no significa duplicar una publicación.\n\nSignifica demostrarla desde cinco ángulos:\n— un caso\n— una lista\n— una historia\n— una objeción\n— una guía\n\nLa audiencia no ve todo lo que publicas. La consistencia necesita repetición inteligente.',
+      image: media.herramientasAgencias,
+      kind: 'carousel',
+      permalink: 'https://www.linkedin.com/',
+      metrics: [
+        { label: 'Impresiones', value: '19.8K' },
+        { label: 'Interacción', value: '5.9%' },
+        { label: 'Compartidos', value: '188' },
+      ],
+      hook: 'Una idea puede producir cinco piezas sin repetirse.',
+      structure: 'Mito → lista visual → explicación → conclusión.',
+      cta: 'Convierte hoy tu mejor tesis en dos ángulos nuevos.',
+      why: 'Promete eficiencia y presenta una estructura que el lector puede copiar.',
+      adaptedScript: 'No descartes una idea porque ya la publicaste. Cámbiale la prueba: conviértela en caso, lista, historia, objeción o guía. La tesis sigue siendo la misma; lo que cambia es la puerta de entrada.',
+    },
+  ],
+}
+
+/**
  * Noticias del sector, con prensa colombiana e internacional.
  *
  * ⚠ Son titulares de EJEMPLO atribuidos a medios reales, no noticias
