@@ -70,11 +70,11 @@ function NavLink({ id, label, Icon, onNavigate }) {
       aria-current={active ? 'page' : undefined}
       className={
         active
-          ? 'w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-[#281518] text-[#f43f5e] font-semibold border border-[#4a1d24] shadow-xs'
-          : 'w-full flex items-center gap-3 px-3 py-2 text-[#94a3b8] hover:text-white hover:bg-sidebar-hover rounded-lg transition-colors group'
+          ? 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-violet-500/20 to-fuchsia-500/10 text-white font-semibold border border-violet-400/20 shadow-[inset_3px_0_0_#8b5cf6]'
+          : 'w-full flex items-center gap-3 px-3 py-2.5 text-[#94a3b8] hover:text-white hover:bg-white/[.055] rounded-xl transition-all group'
       }
     >
-      <Icon className={active ? 'w-4 h-4 text-[#f43f5e]' : 'w-4 h-4 text-[#64748b] group-hover:text-white'} />
+      <span className={active ? 'w-7 h-7 rounded-lg grid place-items-center bg-violet-500 text-white shadow-lg shadow-violet-950/30' : 'w-7 h-7 rounded-lg grid place-items-center bg-white/[.035] text-[#64748b] group-hover:text-white'}><Icon className="w-3.5 h-3.5" /></span>
       <span>{label}</span>
     </button>
   )
@@ -151,15 +151,13 @@ export default function Sidebar({ onAccountAction, open, onClose }) {
       )}
 
       <aside
-        className={`w-64 bg-sidebar flex-shrink-0 flex flex-col justify-between border-r border-sidebar-border select-none h-full
+        className={`w-64 bg-[#0b0d14] flex-shrink-0 flex flex-col justify-between border-r border-white/[.06] select-none h-full
           fixed inset-y-0 left-0 z-40 transition-transform lg:static lg:translate-x-0 lg:z-20
           ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
       <div className="flex flex-col flex-1 overflow-y-auto pt-6 px-4">
         <div className="px-3 mb-8">
-          <span className="text-white text-base tracking-[0.28em] font-extrabold uppercase">
-            B I T A X U S
-          </span>
+          <div className="flex items-center gap-2.5"><span className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white grid place-items-center font-black shadow-lg shadow-violet-950">B</span><div><span className="block text-white text-sm tracking-[0.18em] font-extrabold uppercase">BITAXUS</span><span className="block text-[9px] text-slate-500 tracking-widest mt-0.5">CONTENT OS</span></div></div>
         </div>
 
         <nav className="space-y-6 text-[13px] font-medium">

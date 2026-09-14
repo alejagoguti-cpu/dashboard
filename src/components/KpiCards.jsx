@@ -21,7 +21,7 @@ export default function KpiCards() {
         return (
           <div
             key={id}
-            className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between"
+            className="metric-card group flex items-center justify-between"
           >
             <div>
               <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
@@ -35,7 +35,7 @@ export default function KpiCards() {
                   </span>
                 )}
               </span>
-              <div className="text-xl font-bold text-slate-900 mt-1">{value}</div>
+              <div className="text-2xl font-extrabold tracking-tight text-slate-950 mt-2">{value}</div>
               <span
                 className={`text-[11px] font-medium flex items-center gap-1 mt-0.5 ${
                   delta ? 'text-slate-600' : 'text-slate-500'
@@ -49,7 +49,7 @@ export default function KpiCards() {
                 {caption}
               </span>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center border border-slate-100">
+            <div className="metric-icon group-hover:bg-violet-600 group-hover:text-white transition-colors">
               <Icon className="w-4 h-4" />
             </div>
           </div>
